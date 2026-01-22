@@ -13,7 +13,7 @@ A modern Next.js 16 application for the Muna Deadstock Intake & Listing Portal. 
 ## 📸 Sneak Peek
 
 <!-- Add your screenshot/GIF here -->
-![Frontend Preview](reubuntu.gif)
+![Frontend Preview](../reubuntu.gif)
 
 ---
 
