@@ -7,12 +7,14 @@ interface ChecklistItemProps {
   label: string;
   status: "success" | "warning" | "error";
   count: string | number;
+  onClick?: () => void;
 }
 
 const ChecklistItem: React.FC<ChecklistItemProps> = ({
   label,
   status,
   count,
+  onClick,
 }) => {
   const icons = {
     success: <CheckCircle2 size={14} className="text-teal-500" />,
@@ -21,7 +23,10 @@ const ChecklistItem: React.FC<ChecklistItemProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl">
+    <div
+      className={`flex items-center justify-between p-3 bg-white border border-slate-100 rounded-xl ${onClick ? "cursor-pointer hover:bg-slate-50" : ""}`}
+      onClick={onClick}
+    >
       <div className="flex items-center gap-2">
         {icons[status]}
         <span className="text-xs font-bold text-slate-600 truncate">

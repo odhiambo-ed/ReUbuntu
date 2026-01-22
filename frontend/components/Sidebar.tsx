@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
@@ -61,6 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   stats,
 }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const { signOut, logoutInProgress, user } = useAuth();
   const { data: profile } = useCurrentProfile();
 
@@ -77,6 +78,11 @@ const Sidebar: React.FC<SidebarProps> = ({
       return pathname === "/dashboard";
     }
     return pathname.startsWith(href);
+  };
+
+  const handleFixFailedUploads = () => {
+    router.push("/dashboard/uploads");
+    if (window.innerWidth < 1024) setIsSidebarOpen(false);
   };
 
   return (
@@ -142,6 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   uploads.some((u) => u.error_count > 0) ? "error" : "success"
                 }
                 count={uploads.reduce((acc, u) => acc + u.error_count, 0)}
+                onClick={handleFixFailedUploads}
               />
               <ChecklistItem
                 label="Price Pending"
