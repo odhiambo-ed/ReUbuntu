@@ -88,10 +88,12 @@ const InventoryView: React.FC<InventoryViewProps> = ({
         search: searchTerm || undefined,
       };
 
-      if (value !== "All Categories") apiFilters.category = value;
-      if (value !== "All Conditions")
-        apiFilters.condition = value as ConditionType;
-      if (value !== "All Statuses") apiFilters.status = value as StatusType;
+      if (newFilters.category !== "All Categories")
+        apiFilters.category = newFilters.category;
+      if (newFilters.condition !== "All Conditions")
+        apiFilters.condition = newFilters.condition as ConditionType;
+      if (newFilters.status !== "All Statuses")
+        apiFilters.status = newFilters.status as StatusType;
 
       onFiltersChange(apiFilters);
     }
