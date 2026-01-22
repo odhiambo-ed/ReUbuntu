@@ -16,6 +16,7 @@ import type {
   AuthError,
   AuthChangeEvent,
 } from "@supabase/supabase-js";
+import { useLoading } from "./LoadingContext";
 
 interface AuthContextType {
   user: User | null;
@@ -67,6 +68,7 @@ async function postJson<TResponse>(
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  const { setLoading: setGlobalLoading } = useLoading();
 
   const getSupabase = useCallback(() => {
     if (!supabaseRef.current) {
@@ -252,42 +254,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     setLogoutInProgress(true);
     setError(null);
+    setGlobalLoading(true);
 
-    // Instant UI update
-    setUser(null);
-    setSession(null);
-    setLoading(false);
+    try {
+      const supabase = getSupabase();
 
-    // Immediate redirect for better UX
-    window.location.href = "/auth";
+      // First clear the session
+      await supabase.auth.signOut({ scope: "global" });
 
-    // Background cleanup
-    const cleanup = async () => {
-      try {
-        const supabase = getSupabase();
-        await supabase.auth.signOut({ scope: "global" });
-      } catch {
-        // ignore
-      }
-
+      // Clear server-side cookies
       try {
         await fetch("/api/logout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          keepalive: true,
         });
       } catch {
-        // ignore
+        // Continue even if server logout fails
       }
-    };
 
-    setTimeout(() => {
-      cleanup().finally(() => {
-        setLogoutInProgress(false);
-      });
-    }, 0);
-  }, [getSupabase]);
+      // Clear local state
+      setUser(null);
+      setSession(null);
+      setGlobalLoading(false);
+      setLogoutInProgress(false);
+
+      // Force redirect to auth page
+      window.location.replace("/auth");
+    } catch {
+      // Even if logout fails, clear local state and redirect
+      setUser(null);
+      setSession(null);
+      setGlobalLoading(false);
+      setLogoutInProgress(false);
+      window.location.replace("/auth");
+    }
+  }, [getSupabase, setGlobalLoading]);
 
   const value = useMemo<AuthContextType>(
     () => ({

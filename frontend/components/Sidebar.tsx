@@ -13,15 +13,17 @@ import {
   LogOut,
   ShieldCheck,
   Loader2,
+  Recycle,
 } from "lucide-react";
 import ChecklistItem from "./ChecklistItem";
-import { Upload as UploadType } from "../types";
+import type { UploadSummary } from "@/features/uploads";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentProfile } from "@/features/profile";
 
 interface SidebarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
-  uploads: UploadType[];
+  uploads: UploadSummary[];
   stats: {
     totalItems: number;
     pendingPrice: number;
@@ -60,6 +62,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const pathname = usePathname();
   const { signOut, logoutInProgress, user } = useAuth();
+  const { data: profile } = useCurrentProfile(user?.id || "");
+
+  const fullName = profile?.full_name || user?.user_metadata?.name || "User";
+  const companyName = (profile?.metadata?.company_name as string) || "Premium";
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
@@ -79,20 +85,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center text-white">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M12 16v3" />
-              </svg>
+              <Recycle />
             </div>
             <div>
               <h1 className="text-xl font-black text-slate-900 leading-none">
@@ -182,10 +175,10 @@ const Sidebar: React.FC<SidebarProps> = ({
               />
               <div className="min-w-0">
                 <p className="text-xs font-black text-slate-900 truncate">
-                  {user?.email?.split("@")[0] || "User"}
+                  {fullName}
                 </p>
                 <p className="text-[10px] font-bold text-teal-600 uppercase">
-                  Premium
+                  {companyName}
                 </p>
               </div>
             </div>

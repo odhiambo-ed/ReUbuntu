@@ -12,7 +12,7 @@ import {
   Wallet,
   ChevronRight,
 } from "lucide-react";
-import { Upload } from "../types";
+import type { UploadSummary } from "@/features/uploads";
 import StatCard from "./StatCard";
 
 interface DashboardProps {
@@ -22,7 +22,7 @@ interface DashboardProps {
     listed: number;
     totalValue: number;
   };
-  uploads: Upload[];
+  uploads: UploadSummary[];
 }
 
 const DashboardView: React.FC<DashboardProps> = ({ stats, uploads }) => {
@@ -167,59 +167,6 @@ const DashboardView: React.FC<DashboardProps> = ({ stats, uploads }) => {
                 <ChevronRight size={16} />
               </button>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
-        <div className="bg-slate-900 rounded-[40px] p-10 text-white relative overflow-hidden group shadow-2xl shadow-slate-900/10">
-          <div className="relative z-10 max-w-sm">
-            <h4 className="font-black text-3xl mb-4 leading-tight">
-              Automated Pricing is Live
-            </h4>
-            <p className="text-slate-400 font-medium mb-8 leading-relaxed">
-              Let our AI engine suggest optimal listing prices based on global
-              fashion secondary markets.
-            </p>
-            <button className="px-8 py-4 bg-teal-500 hover:bg-teal-400 text-white font-black rounded-2xl transition-all shadow-xl shadow-teal-500/20 text-sm">
-              Learn More
-            </button>
-          </div>
-          <TrendingUp
-            size={160}
-            className="absolute -right-12 -bottom-12 text-teal-500/10 rotate-12 group-hover:scale-110 transition-transform duration-700"
-          />
-        </div>
-
-        <div className="bg-slate-100 rounded-[40px] p-10 flex flex-col justify-between border-2 border-slate-50 shadow-sm relative overflow-hidden group">
-          <div>
-            <h4 className="font-black text-3xl text-slate-900 mb-4">
-              Inventory Health Report
-            </h4>
-            <p className="text-slate-500 font-medium leading-relaxed max-w-sm">
-              Your deadstock turnaround time has improved by 15% this month.
-              Keep it up!
-            </p>
-          </div>
-
-          <div className="mt-8 flex items-end justify-between gap-3 h-24">
-            {[40, 60, 30, 85, 50, 100, 75].map((h, i) => (
-              <div
-                key={i}
-                className="flex-1 bg-slate-200 rounded-xl relative group overflow-hidden"
-              >
-                <div
-                  className="absolute bottom-0 left-0 right-0 bg-teal-500 group-hover:bg-teal-400 transition-all duration-1000"
-                  style={{ height: `${h}%` }}
-                ></div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-10 flex items-center justify-between">
-            <button className="px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-2xl transition-all shadow-xl shadow-blue-500/20 text-sm">
-              View Report
-            </button>
           </div>
         </div>
       </div>
