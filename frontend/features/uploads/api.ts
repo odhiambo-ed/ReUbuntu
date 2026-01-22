@@ -78,22 +78,15 @@ export async function fetchUploadErrors(
 
 export async function createUpload(
   input: CreateUploadInput,
+  userId: string,
 ): Promise<UploadSummary> {
   const supabase = createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
 
   const { data, error } = await supabase
     .from("uploads")
     .insert({
       ...input,
-      user_id: user.id,
+      user_id: userId,
     })
     .select()
     .single();
@@ -107,19 +100,12 @@ export async function createUpload(
 
 export async function uploadCsvFile(
   file: File,
+  userId: string,
 ): Promise<{ path: string; uploadId: number }> {
   const supabase = createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
-
   const timestamp = Date.now();
-  const filePath = `${user.id}/${timestamp}-${file.name}`;
+  const filePath = `${userId}/${timestamp}-${file.name}`;
 
   const { error: storageError } = await supabase.storage
     .from("csv-uploads")
@@ -132,7 +118,7 @@ export async function uploadCsvFile(
   const { data: uploadData, error: uploadError } = await supabase
     .from("uploads")
     .insert({
-      user_id: user.id,
+      user_id: userId,
       filename: file.name,
       file_path: filePath,
       file_size_bytes: file.size,
@@ -148,19 +134,14 @@ export async function uploadCsvFile(
   return { path: filePath, uploadId: uploadData.id };
 }
 
-export async function processUpload(uploadId: number): Promise<void> {
+export async function processUpload(
+  uploadId: number,
+  userId: string,
+): Promise<void> {
   const supabase = createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
-
   const { error } = await supabase.functions.invoke("process-csv-upload", {
-    body: { upload_id: uploadId.toString(), user_id: user.id },
+    body: { upload_id: uploadId.toString(), user_id: userId },
   });
 
   if (error) {

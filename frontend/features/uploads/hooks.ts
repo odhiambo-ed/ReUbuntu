@@ -35,33 +35,33 @@ export function useUploadErrors(uploadId: number) {
   });
 }
 
-export function useCreateUpload() {
+export function useCreateUpload(userId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateUploadInput) => createUpload(input),
+    mutationFn: (input: CreateUploadInput) => createUpload(input, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: uploadKeys.lists() });
     },
   });
 }
 
-export function useUploadCsvFile() {
+export function useUploadCsvFile(userId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (file: File) => uploadCsvFile(file),
+    mutationFn: (file: File) => uploadCsvFile(file, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: uploadKeys.lists() });
     },
   });
 }
 
-export function useProcessUpload() {
+export function useProcessUpload(userId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (uploadId: number) => processUpload(uploadId),
+    mutationFn: (uploadId: number) => processUpload(uploadId, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: uploadKeys.all });
     },

@@ -75,22 +75,15 @@ export async function fetchInventoryItem(
 
 export async function createInventoryItem(
   input: CreateInventoryItemInput,
+  userId: string,
 ): Promise<InventoryWithPricing> {
   const supabase = createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    throw new Error("User not authenticated");
-  }
 
   const { data, error } = await supabase
     .from("inventory_items")
     .insert({
       ...input,
-      user_id: user.id,
+      user_id: userId,
       currency: input.currency ?? "ZAR",
       quantity: input.quantity ?? 1,
     })

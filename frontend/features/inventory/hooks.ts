@@ -31,11 +31,12 @@ export function useInventoryItem(id: number) {
   });
 }
 
-export function useCreateInventoryItem() {
+export function useCreateInventoryItem(userId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateInventoryItemInput) => createInventoryItem(input),
+    mutationFn: (input: CreateInventoryItemInput) =>
+      createInventoryItem(input, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: inventoryKeys.lists() });
     },

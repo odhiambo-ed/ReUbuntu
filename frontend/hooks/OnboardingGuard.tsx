@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrentProfile } from "@/features/profile";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProfileMetadata {
   company_name?: string;
@@ -42,7 +43,12 @@ function isOnboardingComplete(
 
 export function OnboardingGuard({ children, fallback }: OnboardingGuardProps) {
   const router = useRouter();
-  const { data: profile, isLoading, isError } = useCurrentProfile();
+  const { user } = useAuth();
+  const {
+    data: profile,
+    isLoading,
+    isError,
+  } = useCurrentProfile(user?.id || "");
 
   const onboardingComplete = isOnboardingComplete(
     profile?.full_name,
@@ -83,7 +89,12 @@ export function OnboardingGuard({ children, fallback }: OnboardingGuardProps) {
 }
 
 export function useOnboardingStatus() {
-  const { data: profile, isLoading, isError } = useCurrentProfile();
+  const { user } = useAuth();
+  const {
+    data: profile,
+    isLoading,
+    isError,
+  } = useCurrentProfile(user?.id || "");
 
   const isComplete = isOnboardingComplete(
     profile?.full_name,

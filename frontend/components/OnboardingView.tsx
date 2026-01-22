@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useUpdateProfile } from "@/features/profile";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface OnboardingViewProps {
   onComplete: () => void;
@@ -46,12 +47,13 @@ const steps = [
 ];
 
 const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) => {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [address, setAddress] = useState("");
 
-  const updateProfile = useUpdateProfile();
+  const updateProfile = useUpdateProfile(user?.id || "");
 
   const handleNext = async () => {
     if (currentStep === 0 && !fullName.trim()) {
