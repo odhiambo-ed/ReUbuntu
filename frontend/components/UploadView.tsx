@@ -13,10 +13,10 @@ import {
   Download,
   Trash2,
 } from "lucide-react";
-import { Upload } from "../types";
+import type { UploadSummary } from "@/features/uploads";
 
 interface UploadViewProps {
-  uploads: Upload[];
+  uploads: UploadSummary[];
 }
 
 const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {

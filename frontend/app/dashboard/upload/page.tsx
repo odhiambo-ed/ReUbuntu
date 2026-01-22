@@ -2,8 +2,21 @@
 
 import React from "react";
 import UploadView from "@/components/UploadView";
-import { MOCK_UPLOADS } from "@/services/mockData";
+import { useUploads } from "@/features/uploads";
+import { Loader2 } from "lucide-react";
 
 export default function UploadPage() {
-  return <UploadView uploads={MOCK_UPLOADS} />;
+  const { data: uploadsData, isLoading } = useUploads({ page: 1, limit: 10 });
+
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
+      </div>
+    );
+  }
+
+  const uploads = uploadsData?.data ?? [];
+
+  return <UploadView uploads={uploads} />;
 }
