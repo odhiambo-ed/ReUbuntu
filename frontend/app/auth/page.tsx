@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthView from "@/components/AuthView";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,7 +15,7 @@ function parseHashParams(hash: string) {
   };
 }
 
-export default function AuthPage() {
+function AuthPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
@@ -57,4 +57,12 @@ export default function AuthPage() {
   }, [error, hashError.errorDescription]);
 
   return <AuthView onSuccess={handleSuccess} errorMessage={errorMessage} />;
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AuthPageContent />
+    </Suspense>
+  );
 }
