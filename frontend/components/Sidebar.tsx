@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
@@ -61,17 +61,28 @@ const Sidebar: React.FC<SidebarProps> = ({
   stats,
 }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const { signOut, logoutInProgress, user } = useAuth();
-  const { data: profile } = useCurrentProfile(user?.id || "");
+  const { data: profile } = useCurrentProfile();
 
   const fullName = profile?.full_name || user?.user_metadata?.name || "User";
   const companyName = (profile?.metadata?.company_name as string) || "Premium";
+
+  const userAvatar =
+    (profile?.metadata?.avatar_url as string) ||
+    user?.user_metadata?.avatar_url ||
+    "/Default-avatar.jpg";
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
       return pathname === "/dashboard";
     }
     return pathname.startsWith(href);
+  };
+
+  const handleFixFailedUploads = () => {
+    router.push("/dashboard/uploads");
+    if (window.innerWidth < 1024) setIsSidebarOpen(false);
   };
 
   return (
@@ -137,6 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                   uploads.some((u) => u.error_count > 0) ? "error" : "success"
                 }
                 count={uploads.reduce((acc, u) => acc + u.error_count, 0)}
+                onClick={handleFixFailedUploads}
               />
               <ChecklistItem
                 label="Price Pending"
@@ -167,11 +179,14 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="p-4 bg-white border border-slate-200 rounded-[24px] shadow-sm">
             <div className="flex items-center gap-3 mb-4">
               <Image
-                src="https://picsum.photos/seed/alex/100"
+                src={userAvatar}
                 className="w-10 h-10 rounded-xl object-cover"
                 alt="User avatar"
                 width={40}
                 height={40}
+                onError={(e) => {
+                  e.currentTarget.src = "/Default-avatar.jpg";
+                }}
               />
               <div className="min-w-0">
                 <p className="text-xs font-black text-slate-900 truncate">

@@ -1,6 +1,7 @@
 import React from "react";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { LoadingProvider } from "@/contexts/LoadingContext";
 
 // Mock Supabase client
 const mockSignInWithPassword = jest.fn();
@@ -71,13 +72,15 @@ describe("AuthContext", () => {
       let authValue: ReturnType<typeof useAuth> | null = null;
 
       render(
-        <AuthProvider>
-          <TestComponent
-            onAuth={(auth) => {
-              authValue = auth;
-            }}
-          />
-        </AuthProvider>,
+        <LoadingProvider>
+          <AuthProvider>
+            <TestComponent
+              onAuth={(auth) => {
+                authValue = auth;
+              }}
+            />
+          </AuthProvider>
+        </LoadingProvider>,
       );
 
       await waitFor(() => {
@@ -100,13 +103,15 @@ describe("AuthContext", () => {
       let authValue: ReturnType<typeof useAuth> | null = null;
 
       render(
-        <AuthProvider>
-          <TestComponent
-            onAuth={(auth) => {
-              authValue = auth;
-            }}
-          />
-        </AuthProvider>,
+        <LoadingProvider>
+          <AuthProvider>
+            <TestComponent
+              onAuth={(auth) => {
+                authValue = auth;
+              }}
+            />
+          </AuthProvider>
+        </LoadingProvider>,
       );
 
       await waitFor(() => {
@@ -132,13 +137,15 @@ describe("AuthContext", () => {
       let authValue: ReturnType<typeof useAuth> | null = null;
 
       render(
-        <AuthProvider>
-          <TestComponent
-            onAuth={(auth) => {
-              authValue = auth;
-            }}
-          />
-        </AuthProvider>,
+        <LoadingProvider>
+          <AuthProvider>
+            <TestComponent
+              onAuth={(auth) => {
+                authValue = auth;
+              }}
+            />
+          </AuthProvider>
+        </LoadingProvider>,
       );
 
       await waitFor(() => {
@@ -180,13 +187,15 @@ describe("AuthContext", () => {
       let authValue: ReturnType<typeof useAuth> | null = null;
 
       render(
-        <AuthProvider>
-          <TestComponent
-            onAuth={(auth) => {
-              authValue = auth;
-            }}
-          />
-        </AuthProvider>,
+        <LoadingProvider>
+          <AuthProvider>
+            <TestComponent
+              onAuth={(auth) => {
+                authValue = auth;
+              }}
+            />
+          </AuthProvider>
+        </LoadingProvider>,
       );
 
       await waitFor(() => {
@@ -210,13 +219,15 @@ describe("AuthContext", () => {
       let authValue: ReturnType<typeof useAuth> | null = null;
 
       render(
-        <AuthProvider>
-          <TestComponent
-            onAuth={(auth) => {
-              authValue = auth;
-            }}
-          />
-        </AuthProvider>,
+        <LoadingProvider>
+          <AuthProvider>
+            <TestComponent
+              onAuth={(auth) => {
+                authValue = auth;
+              }}
+            />
+          </AuthProvider>
+        </LoadingProvider>,
       );
 
       await waitFor(() => {
@@ -249,13 +260,15 @@ describe("AuthContext", () => {
       let authValue: ReturnType<typeof useAuth> | null = null;
 
       render(
-        <AuthProvider>
-          <TestComponent
-            onAuth={(auth) => {
-              authValue = auth;
-            }}
-          />
-        </AuthProvider>,
+        <LoadingProvider>
+          <AuthProvider>
+            <TestComponent
+              onAuth={(auth) => {
+                authValue = auth;
+              }}
+            />
+          </AuthProvider>
+        </LoadingProvider>,
       );
 
       await waitFor(() => {
@@ -279,13 +292,15 @@ describe("AuthContext", () => {
       let authValue: ReturnType<typeof useAuth> | null = null;
 
       render(
-        <AuthProvider>
-          <TestComponent
-            onAuth={(auth) => {
-              authValue = auth;
-            }}
-          />
-        </AuthProvider>,
+        <LoadingProvider>
+          <AuthProvider>
+            <TestComponent
+              onAuth={(auth) => {
+                authValue = auth;
+              }}
+            />
+          </AuthProvider>
+        </LoadingProvider>,
       );
 
       await waitFor(() => {
@@ -319,13 +334,15 @@ describe("AuthContext", () => {
       let authValue: ReturnType<typeof useAuth> | null = null;
 
       render(
-        <AuthProvider>
-          <TestComponent
-            onAuth={(auth) => {
-              authValue = auth;
-            }}
-          />
-        </AuthProvider>,
+        <LoadingProvider>
+          <AuthProvider>
+            <TestComponent
+              onAuth={(auth) => {
+                authValue = auth;
+              }}
+            />
+          </AuthProvider>
+        </LoadingProvider>,
       );
 
       await waitFor(() => {
@@ -368,13 +385,15 @@ describe("AuthContext", () => {
       let authValue: ReturnType<typeof useAuth> | null = null;
 
       render(
-        <AuthProvider>
-          <TestComponent
-            onAuth={(auth) => {
-              authValue = auth;
-            }}
-          />
-        </AuthProvider>,
+        <LoadingProvider>
+          <AuthProvider>
+            <TestComponent
+              onAuth={(auth) => {
+                authValue = auth;
+              }}
+            />
+          </AuthProvider>
+        </LoadingProvider>,
       );
 
       await waitFor(() => {

@@ -3,24 +3,14 @@
 import React from "react";
 import Link from "next/link";
 import { useUploads } from "@/features/uploads";
-import {
-  Loader2,
-  FileText,
-  History,
-  MoreVertical,
-  Trash2,
-  Plus,
-} from "lucide-react";
+import { FileText, History, MoreVertical, Trash2, Plus } from "lucide-react";
+import { UploadsPageSkeleton } from "@/components/Skeletons";
 
 export default function UploadsPage() {
   const { data: uploadsData, isLoading } = useUploads({ page: 1, limit: 20 });
 
   if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
-      </div>
-    );
+    return <UploadsPageSkeleton />;
   }
 
   const uploads = uploadsData?.data ?? [];

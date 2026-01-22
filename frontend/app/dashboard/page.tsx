@@ -4,7 +4,7 @@ import React from "react";
 import DashboardView from "@/components/DashboardView";
 import { useDashboardStats } from "@/features/dashboard";
 import { useUploads } from "@/features/uploads";
-import { Loader2 } from "lucide-react";
+import { DashboardSkeleton } from "@/components/Skeletons";
 
 export default function DashboardPage() {
   const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();
@@ -16,11 +16,7 @@ export default function DashboardPage() {
   const isLoading = statsLoading || uploadsLoading;
 
   if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const stats = {

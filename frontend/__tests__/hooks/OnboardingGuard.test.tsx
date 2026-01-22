@@ -17,6 +17,22 @@ jest.mock("@/features/profile/api", () => ({
   fetchCurrentProfile: jest.fn(),
 }));
 
+jest.mock("@/contexts/AuthContext", () => ({
+  AuthProvider: ({ children }: { children: ReactNode }) => children,
+  useAuth: () => ({
+    user: { id: "test-user-id" },
+    session: null,
+    loading: false,
+    logoutInProgress: false,
+    error: null,
+    signInWithEmail: jest.fn(),
+    signUpWithEmail: jest.fn(),
+    signInWithGoogle: jest.fn(),
+    signOut: jest.fn(),
+    refreshSession: jest.fn(),
+  }),
+}));
+
 import { fetchCurrentProfile } from "@/features/profile/api";
 
 const mockedFetchCurrentProfile = fetchCurrentProfile as jest.MockedFunction<

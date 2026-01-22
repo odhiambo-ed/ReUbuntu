@@ -12,11 +12,16 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ setIsSidebarOpen }) => {
   const { user } = useAuth();
-  const { data: profile } = useCurrentProfile(user?.id || "");
+  const { data: profile } = useCurrentProfile();
 
   const fullName = profile?.full_name || user?.user_metadata?.name || "User";
   const companyName =
     (profile?.metadata?.company_name as string) || "Premium Merchant";
+
+  const userAvatar =
+    (profile?.metadata?.avatar_url as string) ||
+    user?.user_metadata?.avatar_url ||
+    "/Default-avatar.jpg";
   return (
     <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 shrink-0">
       <div className="flex items-center gap-6">
@@ -55,11 +60,14 @@ const Header: React.FC<HeaderProps> = ({ setIsSidebarOpen }) => {
             </p>
           </div>
           <Image
-            src="https://picsum.photos/seed/alex/100"
+            src={userAvatar}
             className="w-10 h-10 rounded-xl object-cover ring-2 ring-slate-100"
             alt="User avatar"
             width={40}
             height={40}
+            onError={(e) => {
+              e.currentTarget.src = "/Default-avatar.jpg";
+            }}
           />
         </div>
       </div>

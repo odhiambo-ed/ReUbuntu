@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, UpdateProfileInput } from "./types";
 
-export async function fetchCurrentProfile(userId: string): Promise<Profile | null> {
+export async function fetchCurrentProfile(): Promise<Profile | null> {
   const supabase = createClient();
 
   const {
@@ -30,7 +30,7 @@ export async function fetchCurrentProfile(userId: string): Promise<Profile | nul
 }
 
 export async function updateProfile(
-input: UpdateProfileInput, userId: string,
+  input: UpdateProfileInput,
 ): Promise<Profile> {
   const supabase = createClient();
 

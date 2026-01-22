@@ -6,7 +6,6 @@ import {
   Mail,
   Lock,
   ArrowRight,
-  Chrome,
   ShieldCheck,
   Loader2,
   Eye,

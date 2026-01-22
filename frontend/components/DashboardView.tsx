@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Download,
   MoreVertical,
-  TrendingUp,
   Package,
   Clock,
   CheckCircle,

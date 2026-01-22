@@ -47,13 +47,13 @@ const steps = [
 ];
 
 const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) => {
-  const { user } = useAuth();
+  useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [address, setAddress] = useState("");
 
-  const updateProfile = useUpdateProfile(user?.id || "");
+  const updateProfile = useUpdateProfile();
 
   const handleNext = async () => {
     if (currentStep === 0 && !fullName.trim()) {

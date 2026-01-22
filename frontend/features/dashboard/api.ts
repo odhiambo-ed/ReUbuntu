@@ -9,11 +9,13 @@ import type {
 interface InventoryStatsRow {
   status: string;
   resale_price: number | null;
+  quantity: number;
 }
 
 interface CategoryRow {
   category: string;
   resale_price: number | null;
+  quantity: number;
 }
 
 interface ConditionRow {
@@ -38,7 +40,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
   // Fetch inventory stats
   const { data: inventoryData, error: inventoryError } = await supabase
     .from("inventory_with_pricing")
-    .select("status, resale_price")
+    .select("status, resale_price, quantity")
     .eq("user_id", user.id);
 
   if (inventoryError) {
@@ -64,7 +66,8 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     (i: InventoryStatsRow) => i.resale_price != null,
   );
   const totalValue = itemsWithPrice.reduce(
-    (sum: number, i: InventoryStatsRow) => sum + (i.resale_price ?? 0),
+    (sum: number, i: InventoryStatsRow) =>
+      sum + (i.resale_price ?? 0) * i.quantity,
     0,
   );
   const averagePrice =
@@ -107,7 +110,7 @@ export async function fetchInventoryByCategory(): Promise<
 
   const { data, error } = await supabase
     .from("inventory_with_pricing")
-    .select("category, resale_price")
+    .select("category, resale_price, quantity")
     .eq("user_id", user.id);
 
   if (error) {
@@ -124,7 +127,8 @@ export async function fetchInventoryByCategory(): Promise<
     };
     categoryMap.set(item.category, {
       count: existing.count + 1,
-      totalValue: existing.totalValue + (item.resale_price ?? 0),
+      totalValue:
+        existing.totalValue + (item.resale_price ?? 0) * item.quantity,
     });
   }
 
