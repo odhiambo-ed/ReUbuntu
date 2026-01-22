@@ -3,12 +3,20 @@
 import React from "react";
 import { Bell, Search, Menu } from "lucide-react";
 import Image from "next/image";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentProfile } from "@/features/profile";
 
 interface HeaderProps {
   setIsSidebarOpen: (open: boolean) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ setIsSidebarOpen }) => {
+  const { user } = useAuth();
+  const { data: profile } = useCurrentProfile(user?.id || "");
+
+  const fullName = profile?.full_name || user?.user_metadata?.name || "User";
+  const companyName =
+    (profile?.metadata?.company_name as string) || "Premium Merchant";
   return (
     <header className="h-20 bg-white border-b border-slate-100 flex items-center justify-between px-8 shrink-0">
       <div className="flex items-center gap-6">
@@ -40,10 +48,10 @@ const Header: React.FC<HeaderProps> = ({ setIsSidebarOpen }) => {
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-black text-slate-900 leading-tight">
-              Alexandra V.
+              {fullName}
             </p>
             <p className="text-[10px] font-bold text-slate-400">
-              Premium Merchant
+              {companyName}
             </p>
           </div>
           <Image

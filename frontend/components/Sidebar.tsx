@@ -12,12 +12,13 @@ import {
   X,
   LogOut,
   ShieldCheck,
-    Loader2,
+  Loader2,
   Recycle,
 } from "lucide-react";
 import ChecklistItem from "./ChecklistItem";
 import type { UploadSummary } from "@/features/uploads";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrentProfile } from "@/features/profile";
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -61,6 +62,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const pathname = usePathname();
   const { signOut, logoutInProgress, user } = useAuth();
+  const { data: profile } = useCurrentProfile(user?.id || "");
+
+  const fullName = profile?.full_name || user?.user_metadata?.name || "User";
+  const companyName = (profile?.metadata?.company_name as string) || "Premium";
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
@@ -170,10 +175,10 @@ const Sidebar: React.FC<SidebarProps> = ({
               />
               <div className="min-w-0">
                 <p className="text-xs font-black text-slate-900 truncate">
-                  {user?.email?.split("@")[0] || "User"}
+                  {fullName}
                 </p>
                 <p className="text-[10px] font-bold text-teal-600 uppercase">
-                  Premium
+                  {companyName}
                 </p>
               </div>
             </div>
