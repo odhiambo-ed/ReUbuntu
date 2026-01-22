@@ -12,9 +12,11 @@ import {
   X,
   LogOut,
   ShieldCheck,
+  Loader2,
 } from "lucide-react";
 import ChecklistItem from "./ChecklistItem";
 import { Upload as UploadType } from "../types";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -57,6 +59,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   stats,
 }) => {
   const pathname = usePathname();
+  const { signOut, logoutInProgress, user } = useAuth();
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
@@ -179,19 +182,25 @@ const Sidebar: React.FC<SidebarProps> = ({
               />
               <div className="min-w-0">
                 <p className="text-xs font-black text-slate-900 truncate">
-                  Alexandra V.
+                  {user?.email?.split("@")[0] || "User"}
                 </p>
                 <p className="text-[10px] font-bold text-teal-600 uppercase">
                   Premium
                 </p>
               </div>
             </div>
-            <Link
-              href="/"
-              className="w-full flex items-center justify-center gap-2 py-2 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-all text-xs font-bold"
+            <button
+              onClick={() => signOut()}
+              disabled={logoutInProgress}
+              className="w-full flex items-center justify-center gap-2 py-2 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-all text-xs font-bold disabled:opacity-50"
             >
-              <LogOut size={14} /> Logout
-            </Link>
+              {logoutInProgress ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <LogOut size={14} />
+              )}
+              {logoutInProgress ? "Logging out..." : "Logout"}
+            </button>
           </div>
         </div>
       </div>
