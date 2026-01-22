@@ -29,20 +29,23 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: jwt } = await supabase.auth.getClaims();
 
   const isAuthRoute = request.nextUrl.pathname.startsWith("/auth");
   const isPublicRoute = request.nextUrl.pathname === "/";
+  const isAuthenticated = Boolean(jwt?.claims?.sub);
 
-  if (!user && !isAuthRoute && !isPublicRoute) {
+  if (!isAuthenticated && !isAuthRoute && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth";
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthRoute && !request.nextUrl.pathname.includes("/callback")) {
+  if (
+    isAuthenticated &&
+    isAuthRoute &&
+    !request.nextUrl.pathname.includes("/callback")
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
