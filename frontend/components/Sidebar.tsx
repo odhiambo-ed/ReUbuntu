@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -169,10 +170,12 @@ const Sidebar: React.FC<SidebarProps> = ({
 
           <div className="p-4 bg-white border border-slate-200 rounded-[24px] shadow-sm">
             <div className="flex items-center gap-3 mb-4">
-              <img
+              <Image
                 src="https://picsum.photos/seed/alex/100"
                 className="w-10 h-10 rounded-xl object-cover"
                 alt="User avatar"
+                width={40}
+                height={40}
               />
               <div className="min-w-0">
                 <p className="text-xs font-black text-slate-900 truncate">

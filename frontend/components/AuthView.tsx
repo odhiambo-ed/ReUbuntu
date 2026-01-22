@@ -92,11 +92,11 @@ const AuthView: React.FC<AuthViewProps> = ({ onLogin }) => {
               </button>
 
               <div className="relative flex items-center py-4">
-                <div className="flex-grow border-t border-slate-100"></div>
-                <span className="flex-shrink mx-4 text-slate-300 text-[10px] font-black uppercase tracking-widest">
+                <div className="grow border-t border-slate-100"></div>
+                <span className="shrink mx-4 text-slate-300 text-[10px] font-black uppercase tracking-widest">
                   Or use email
                 </span>
-                <div className="flex-grow border-t border-slate-100"></div>
+                <div className="grow border-t border-slate-100"></div>
               </div>
 
               <div className="space-y-5">

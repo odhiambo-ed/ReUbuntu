@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Bell, Search, Menu } from "lucide-react";
+import Image from "next/image";
 
 interface HeaderProps {
   setIsSidebarOpen: (open: boolean) => void;
@@ -45,10 +46,12 @@ const Header: React.FC<HeaderProps> = ({ setIsSidebarOpen }) => {
               Premium Merchant
             </p>
           </div>
-          <img
+          <Image
             src="https://picsum.photos/seed/alex/100"
             className="w-10 h-10 rounded-xl object-cover ring-2 ring-slate-100"
             alt="User avatar"
+            width={40}
+            height={40}
           />
         </div>
       </div>
