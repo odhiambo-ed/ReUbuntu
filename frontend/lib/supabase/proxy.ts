@@ -29,21 +29,42 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const { data: jwt } = await supabase.auth.getClaims();
+  // IMPORTANT: Do not run any code between createServerClient and auth.getClaims()
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims;
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith("/auth");
-  const isPublicRoute = request.nextUrl.pathname === "/";
-  const isAuthenticated = Boolean(jwt?.claims?.sub);
+  // Log for debugging
+  console.log(
+    "[Middleware] Path:",
+    request.nextUrl.pathname,
+    "| User:",
+    user ? "Present" : "None",
+  );
 
-  if (!isAuthenticated && !isAuthRoute && !isPublicRoute) {
+  // Allow auth callback routes to proceed without user check
+  if (request.nextUrl.pathname.startsWith("/auth/callback")) {
+    console.log("[Middleware] Allowing auth callback to proceed");
+    return supabaseResponse;
+  }
+
+  // Protected routes that require authentication
+  const protectedRoutes = ["/dashboard", "/onboarding"];
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    request.nextUrl.pathname.startsWith(route),
+  );
+
+  // Check if user is authenticated for protected routes
+  if (!user && isProtectedRoute) {
+    console.log("[Middleware] Redirecting to login:", request.nextUrl.pathname);
     const url = request.nextUrl.clone();
     url.pathname = "/auth";
     return NextResponse.redirect(url);
   }
 
+  // Redirect authenticated users away from auth page (except callback)
   if (
-    isAuthenticated &&
-    isAuthRoute &&
+    user &&
+    request.nextUrl.pathname.startsWith("/auth") &&
     !request.nextUrl.pathname.includes("/callback")
   ) {
     const url = request.nextUrl.clone();
