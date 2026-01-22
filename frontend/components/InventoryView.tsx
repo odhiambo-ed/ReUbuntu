@@ -23,6 +23,7 @@ import type {
 import FilterSelect from "./FilterSelect";
 import Checkbox from "./Checkbox";
 import StatusBadge from "./StatusBadge";
+import { InventoryPageSkeleton } from "./Skeletons";
 
 interface InventoryViewProps {
   inventory: InventoryItem[];
@@ -220,16 +221,12 @@ const InventoryView: React.FC<InventoryViewProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  if (isLoading) {
+    return <InventoryPageSkeleton />;
+  }
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 h-full flex flex-col overflow-hidden">
-      {isLoading && (
-        <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-50">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-slate-600">Loading...</span>
-          </div>
-        </div>
-      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-3xl font-bold text-slate-900">
