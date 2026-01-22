@@ -53,7 +53,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) => {
   const [companyName, setCompanyName] = useState("");
   const [address, setAddress] = useState("");
 
-  const updateProfile = useUpdateProfile(user?.id || "");
+  const updateProfile = useUpdateProfile();
 
   const handleNext = async () => {
     if (currentStep === 0 && !fullName.trim()) {

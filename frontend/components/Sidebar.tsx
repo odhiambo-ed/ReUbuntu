@@ -62,7 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const pathname = usePathname();
   const { signOut, logoutInProgress, user } = useAuth();
-  const { data: profile } = useCurrentProfile(user?.id || "");
+  const { data: profile } = useCurrentProfile();
 
   const fullName = profile?.full_name || user?.user_metadata?.name || "User";
   const companyName = (profile?.metadata?.company_name as string) || "Premium";
