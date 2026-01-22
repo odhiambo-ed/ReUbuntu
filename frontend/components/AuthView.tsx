@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Mail,
   Lock,
@@ -8,71 +8,147 @@ import {
   Chrome,
   ShieldCheck,
   Loader2,
-  AlertCircle,
+  Eye,
+  EyeOff,
+  User,
+  Check,
+  X,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface AuthViewProps {
   onSuccess?: () => void;
   errorMessage?: string | null;
 }
 
+// Password strength calculation
+function getPasswordStrength(password: string): {
+  score: number;
+  label: string;
+  color: string;
+} {
+  let score = 0;
+
+  if (password.length >= 8) score += 1;
+  if (password.length >= 12) score += 1;
+  if (/[a-z]/.test(password)) score += 1;
+  if (/[A-Z]/.test(password)) score += 1;
+  if (/[0-9]/.test(password)) score += 1;
+  if (/[^a-zA-Z0-9]/.test(password)) score += 1;
+
+  if (score <= 2) return { score, label: "Weak", color: "bg-red-500" };
+  if (score <= 4) return { score, label: "Medium", color: "bg-yellow-500" };
+  return { score, label: "Strong", color: "bg-green-500" };
+}
+
 const AuthView: React.FC<AuthViewProps> = ({ onSuccess, errorMessage }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(errorMessage || null);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const { signInWithEmail, signUpWithEmail, signInWithGoogle } = useAuth();
 
+  // Show error message from props as toast
+  useEffect(() => {
+    if (errorMessage) {
+      toast.error(errorMessage);
+    }
+  }, [errorMessage]);
+
+  // Password strength
+  const passwordStrength = useMemo(
+    () => getPasswordStrength(password),
+    [password],
+  );
+
+  // Password requirements check
+  const passwordRequirements = useMemo(
+    () => ({
+      minLength: password.length >= 8,
+      hasLowercase: /[a-z]/.test(password),
+      hasUppercase: /[A-Z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+    }),
+    [password],
+  );
+
+  // Check if passwords match
+  const passwordsMatch = password === confirmPassword && confirmPassword !== "";
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccessMessage(null);
     setLoading(true);
 
     try {
       if (isLogin) {
         const { error } = await signInWithEmail(email, password);
         if (error) {
-          setError(error.message);
+          toast.error(error.message || "Invalid email or password");
         } else {
-          onSuccess?.();
+          toast.success("Login successful!");
+          setTimeout(() => {
+            onSuccess?.();
+          }, 100);
         }
       } else {
-        const { error } = await signUpWithEmail(email, password);
+        // Validation for signup
+        if (!name.trim()) {
+          toast.warning("Please enter your name");
+          setLoading(false);
+          return;
+        }
+        if (password.length < 8) {
+          toast.warning("Password must be at least 8 characters");
+          setLoading(false);
+          return;
+        }
+        if (password !== confirmPassword) {
+          toast.warning("Passwords do not match");
+          setLoading(false);
+          return;
+        }
+
+        const { error } = await signUpWithEmail(email, password, { name });
         if (error) {
-          setError(error.message);
+          toast.error(error.message || "Failed to create account");
         } else {
-          setSuccessMessage(
-            "Check your email to confirm your account before signing in.",
+          toast.success(
+            "Account created! Please check your email to verify your account.",
           );
+          setName("");
           setEmail("");
           setPassword("");
+          setConfirmPassword("");
+          setTimeout(() => {
+            setIsLogin(true);
+          }, 1500);
         }
       }
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      toast.error("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleAuth = async () => {
-    setError(null);
     setLoading(true);
+    toast.info("Redirecting to Google...");
 
     try {
       const { error } = await signInWithGoogle();
       if (error) {
-        setError(error.message);
+        toast.error(error.message);
         setLoading(false);
       }
-      // If no error, the user will be redirected to Google OAuth
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      toast.error("An unexpected error occurred. Please try again.");
       setLoading(false);
     }
   };
@@ -142,7 +218,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess, errorMessage }) => {
 
         <div className="w-full md:w-1/2 p-16 flex flex-col justify-center bg-white">
           <div className="max-w-md mx-auto w-full">
-            <div className="mb-12">
+            <div className="mb-8">
               <h3 className="text-4xl font-black text-slate-900 tracking-tight">
                 {isLogin ? "Hello again." : "Welcome."}
               </h3>
@@ -153,20 +229,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess, errorMessage }) => {
               </p>
             </div>
 
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3 text-red-700">
-                <AlertCircle size={20} />
-                <p className="text-sm font-medium">{error}</p>
-              </div>
-            )}
-
-            {successMessage && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl text-green-700">
-                <p className="text-sm font-medium">{successMessage}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleEmailAuth} className="space-y-6">
+            <form onSubmit={handleEmailAuth} className="space-y-5">
               <button
                 type="button"
                 onClick={handleGoogleAuth}
@@ -181,7 +244,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess, errorMessage }) => {
                 Continue with Google
               </button>
 
-              <div className="relative flex items-center py-4">
+              <div className="relative flex items-center py-3">
                 <div className="grow border-t border-slate-100"></div>
                 <span className="shrink mx-4 text-slate-300 text-[10px] font-black uppercase tracking-widest">
                   Or use email
@@ -189,7 +252,32 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess, errorMessage }) => {
                 <div className="grow border-t border-slate-100"></div>
               </div>
 
-              <div className="space-y-5">
+              <div className="space-y-4">
+                {/* Name field - only for signup */}
+                {!isLogin && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                      Full Name
+                    </label>
+                    <div className="relative group">
+                      <User
+                        className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors"
+                        size={18}
+                      />
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Jane Doe"
+                        required={!isLogin}
+                        disabled={loading}
+                        className="w-full pl-14 pr-5 py-4 bg-slate-50 border-2 border-transparent focus:bg-white focus:border-teal-500 rounded-2xl text-sm font-bold transition-all outline-none disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Email field */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
                     Work Email
@@ -211,9 +299,10 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess, errorMessage }) => {
                   </div>
                 </div>
 
+                {/* Password field */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-                    Security Key
+                    {isLogin ? "Security Key" : "Password"}
                   </label>
                   <div className="relative group">
                     <Lock
@@ -221,22 +310,154 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess, errorMessage }) => {
                       size={18}
                     />
                     <input
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       required
-                      minLength={6}
+                      minLength={isLogin ? 1 : 8}
                       disabled={loading}
-                      className="w-full pl-14 pr-5 py-4 bg-slate-50 border-2 border-transparent focus:bg-white focus:border-teal-500 rounded-2xl text-sm font-bold transition-all outline-none disabled:opacity-50"
+                      className="w-full pl-14 pr-12 py-4 bg-slate-50 border-2 border-transparent focus:bg-white focus:border-teal-500 rounded-2xl text-sm font-bold transition-all outline-none disabled:opacity-50"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                   </div>
+
+                  {/* Password strength indicator - only for signup */}
+                  {!isLogin && password && (
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${passwordStrength.color} transition-all duration-300`}
+                            style={{
+                              width: `${(passwordStrength.score / 6) * 100}%`,
+                            }}
+                          />
+                        </div>
+                        <span
+                          className={`text-xs font-bold ${
+                            passwordStrength.label === "Weak"
+                              ? "text-red-500"
+                              : passwordStrength.label === "Medium"
+                                ? "text-yellow-600"
+                                : "text-green-500"
+                          }`}
+                        >
+                          {passwordStrength.label}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1 text-xs">
+                        <div
+                          className={`flex items-center gap-1 ${passwordRequirements.minLength ? "text-green-600" : "text-slate-400"}`}
+                        >
+                          {passwordRequirements.minLength ? (
+                            <Check size={12} />
+                          ) : (
+                            <X size={12} />
+                          )}
+                          8+ characters
+                        </div>
+                        <div
+                          className={`flex items-center gap-1 ${passwordRequirements.hasLowercase ? "text-green-600" : "text-slate-400"}`}
+                        >
+                          {passwordRequirements.hasLowercase ? (
+                            <Check size={12} />
+                          ) : (
+                            <X size={12} />
+                          )}
+                          Lowercase
+                        </div>
+                        <div
+                          className={`flex items-center gap-1 ${passwordRequirements.hasUppercase ? "text-green-600" : "text-slate-400"}`}
+                        >
+                          {passwordRequirements.hasUppercase ? (
+                            <Check size={12} />
+                          ) : (
+                            <X size={12} />
+                          )}
+                          Uppercase
+                        </div>
+                        <div
+                          className={`flex items-center gap-1 ${passwordRequirements.hasNumber ? "text-green-600" : "text-slate-400"}`}
+                        >
+                          {passwordRequirements.hasNumber ? (
+                            <Check size={12} />
+                          ) : (
+                            <X size={12} />
+                          )}
+                          Number
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {/* Confirm Password field - only for signup */}
+                {!isLogin && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                      Confirm Password
+                    </label>
+                    <div className="relative group">
+                      <Lock
+                        className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-teal-500 transition-colors"
+                        size={18}
+                      />
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        required={!isLogin}
+                        disabled={loading}
+                        className={`w-full pl-14 pr-12 py-4 bg-slate-50 border-2 border-transparent focus:bg-white rounded-2xl text-sm font-bold transition-all outline-none disabled:opacity-50 ${
+                          confirmPassword && !passwordsMatch
+                            ? "border-red-300 focus:border-red-500"
+                            : confirmPassword && passwordsMatch
+                              ? "border-green-300 focus:border-green-500"
+                              : "focus:border-teal-500"
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
+                      </button>
+                    </div>
+                    {confirmPassword && !passwordsMatch && (
+                      <p className="text-xs text-red-500 font-medium ml-1">
+                        Passwords do not match
+                      </p>
+                    )}
+                    {confirmPassword && passwordsMatch && (
+                      <p className="text-xs text-green-500 font-medium ml-1 flex items-center gap-1">
+                        <Check size={12} /> Passwords match
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={
+                  loading ||
+                  (!isLogin && !passwordsMatch && confirmPassword !== "")
+                }
                 className="w-full py-5 bg-teal-500 hover:bg-teal-600 text-white font-black rounded-2xl transition-all shadow-xl shadow-teal-500/20 active:scale-95 flex items-center justify-center gap-3 text-lg mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
@@ -255,8 +476,8 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess, errorMessage }) => {
                   type="button"
                   onClick={() => {
                     setIsLogin(!isLogin);
-                    setError(null);
-                    setSuccessMessage(null);
+                    setPassword("");
+                    setConfirmPassword("");
                   }}
                   className="font-black text-teal-600 hover:text-teal-700 underline underline-offset-4"
                 >
