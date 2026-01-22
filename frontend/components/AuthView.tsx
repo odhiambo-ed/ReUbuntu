@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
+import Image from "next/image";
 import {
   Mail,
   Lock,
@@ -13,6 +14,7 @@ import {
   User,
   Check,
   X,
+  Recycle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -160,20 +162,7 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess, errorMessage }) => {
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-16">
               <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-teal-600 font-black text-2xl">
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M12 16v3" />
-                </svg>
+                <Recycle />
               </div>
               <div>
                 <h1 className="text-2xl font-black tracking-tight">ReUbuntu</h1>
@@ -239,7 +228,13 @@ const AuthView: React.FC<AuthViewProps> = ({ onSuccess, errorMessage }) => {
                 {loading ? (
                   <Loader2 size={20} className="animate-spin" />
                 ) : (
-                  <Chrome size={20} />
+                  <Image
+                    src="https://www.svgrepo.com/show/355037/google.svg"
+                    width={20}
+                    height={20}
+                    alt="Google"
+                    className="w-4 h-4"
+                  />
                 )}
                 Continue with Google
               </button>
