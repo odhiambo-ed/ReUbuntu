@@ -12,7 +12,7 @@ import {
   Wallet,
   ChevronRight,
 } from "lucide-react";
-import { Upload } from "../types";
+import type { UploadSummary } from "@/features/uploads";
 import StatCard from "./StatCard";
 
 interface DashboardProps {
@@ -22,7 +22,7 @@ interface DashboardProps {
     listed: number;
     totalValue: number;
   };
-  uploads: Upload[];
+  uploads: UploadSummary[];
 }
 
 const DashboardView: React.FC<DashboardProps> = ({ stats, uploads }) => {

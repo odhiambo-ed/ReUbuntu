@@ -5,8 +5,9 @@ import Link from "next/link";
 import { Upload } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
-import { MOCK_UPLOADS, MOCK_INVENTORY } from "@/services/mockData";
 import { OnboardingGuard } from "@/hooks";
+import { useDashboardStats } from "@/features/dashboard";
+import { useUploads } from "@/features/uploads";
 
 export default function DashboardLayout({
   children,
@@ -15,15 +16,17 @@ export default function DashboardLayout({
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  const { data: dashboardStats } = useDashboardStats();
+  const { data: uploadsData } = useUploads({ page: 1, limit: 5 });
+
   const stats = {
-    totalItems: MOCK_INVENTORY.length,
-    pendingPrice: MOCK_INVENTORY.filter((i) => i.status === "pending").length,
-    listed: MOCK_INVENTORY.filter((i) => i.status === "listed").length,
-    totalValue: MOCK_INVENTORY.reduce(
-      (acc, i) => acc + (i.resale_price || 0),
-      0,
-    ),
+    totalItems: dashboardStats?.totalItems ?? 0,
+    pendingPrice: dashboardStats?.pendingItems ?? 0,
+    listed: dashboardStats?.listedItems ?? 0,
+    totalValue: dashboardStats?.totalValue ?? 0,
   };
+
+  const uploads = uploadsData?.data ?? [];
 
   return (
     <OnboardingGuard>
@@ -31,7 +34,7 @@ export default function DashboardLayout({
         <Sidebar
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
-          uploads={MOCK_UPLOADS}
+          uploads={uploads}
           stats={stats}
         />
 
