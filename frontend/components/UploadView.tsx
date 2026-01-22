@@ -14,6 +14,8 @@ import {
   Trash2,
 } from "lucide-react";
 import type { UploadSummary } from "@/features/uploads";
+import { uploadCsvFile } from "@/features/uploads/api";
+import { createClient } from "@/lib/supabase/client";
 
 interface UploadViewProps {
   uploads: UploadSummary[];
@@ -25,6 +27,9 @@ const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [successCount, setSuccessCount] = useState(0);
+  const [totalRows, setTotalRows] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -57,24 +62,56 @@ const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!selectedFile) return;
     setIsUploading(true);
     setUploadProgress(0);
+    setUploadError(null);
 
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            setIsUploading(false);
-            setShowSuccess(true);
-          }, 500);
-          return 100;
-        }
-        return prev + 5;
-      });
-    }, 100);
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      setUploadProgress(10);
+      const { uploadId } = await uploadCsvFile(selectedFile);
+
+      setUploadProgress(30);
+
+      const response = await fetch(
+        "https://jcyoebmpyumytxiznpxa.supabase.co/functions/v1/process-csv-upload",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            upload_id: uploadId.toString(),
+            user_id: user.id,
+          }),
+        },
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        setUploadProgress(100);
+        setSuccessCount(result.success_count);
+        setTotalRows(result.total_rows);
+        setIsUploading(false);
+        setShowSuccess(true);
+      } else {
+        throw new Error(result.error || "Processing failed");
+      }
+    } catch (error) {
+      setIsUploading(false);
+      setUploadError(error instanceof Error ? error.message : "Upload failed");
+    }
   };
 
   const reset = () => {
@@ -82,6 +119,9 @@ const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
     setIsUploading(false);
     setUploadProgress(0);
     setShowSuccess(false);
+    setUploadError(null);
+    setSuccessCount(0);
+    setTotalRows(0);
   };
 
   return (
@@ -230,6 +270,28 @@ const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
         </div>
       )}
 
+      {uploadError && (
+        <div className="bg-white border-2 border-red-500/30 p-10 rounded-[40px] shadow-2xl shadow-red-500/5 animate-in zoom-in duration-500">
+          <div className="flex flex-col items-center text-center space-y-6">
+            <div className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center text-white shadow-xl shadow-red-500/20">
+              <X size={40} />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black text-slate-900">
+                Upload Failed
+              </h3>
+              <p className="text-slate-500 max-w-sm">{uploadError}</p>
+            </div>
+            <button
+              onClick={reset}
+              className="px-8 py-3 bg-slate-100 text-slate-600 font-black rounded-2xl hover:bg-slate-200 transition-all"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      )}
+
       {showSuccess && (
         <div className="bg-white border-2 border-teal-500/30 p-10 rounded-[40px] shadow-2xl shadow-teal-500/5 animate-in zoom-in duration-500">
           <div className="flex flex-col items-center text-center space-y-6">
@@ -241,8 +303,10 @@ const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
                 Upload Complete!
               </h3>
               <p className="text-slate-500 max-w-sm">
-                <span className="text-teal-600 font-black">20 of 20</span> rows
-                imported successfully. Auto-pricing has been applied to all
+                <span className="text-teal-600 font-black">
+                  {successCount} of {totalRows}
+                </span>{" "}
+                rows imported successfully. Auto-pricing has been applied to all
                 eligible items.
               </p>
             </div>

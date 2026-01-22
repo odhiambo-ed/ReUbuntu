@@ -151,8 +151,16 @@ export async function uploadCsvFile(
 export async function processUpload(uploadId: number): Promise<void> {
   const supabase = createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
   const { error } = await supabase.functions.invoke("process-csv-upload", {
-    body: { uploadId },
+    body: { upload_id: uploadId.toString(), user_id: user.id },
   });
 
   if (error) {
