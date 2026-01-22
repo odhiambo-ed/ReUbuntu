@@ -14,7 +14,9 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { InventoryItem, StatusType } from "../types";
+import type { InventoryItem } from "@/features/inventory";
+
+type StatusType = "pending" | "priced" | "listed" | "unlisted" | "sold";
 import FilterSelect from "./FilterSelect";
 import Checkbox from "./Checkbox";
 import StatusBadge from "./StatusBadge";
@@ -22,8 +24,8 @@ import StatusBadge from "./StatusBadge";
 interface InventoryViewProps {
   inventory: InventoryItem[];
   onUpdateItem: (item: InventoryItem) => void;
-  onDeleteItem: (id: string) => void;
-  onBulkStatusUpdate: (ids: string[], status: StatusType) => void;
+  onDeleteItem: (id: number) => void;
+  onBulkStatusUpdate: (ids: number[], status: StatusType) => void;
 }
 
 const InventoryView: React.FC<InventoryViewProps> = ({
@@ -36,7 +38,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
   void onUpdateItem;
   void onDeleteItem;
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [activeFilters, setActiveFilters] = useState({
     category: "All Categories",
     condition: "All Conditions",
@@ -74,7 +76,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
     }
   };
 
-  const toggleSelectItem = (id: string) => {
+  const toggleSelectItem = (id: number) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
