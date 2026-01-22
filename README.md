@@ -23,7 +23,7 @@
 ## 📸 Sneak Peek
 
 <!-- Add your screenshot/GIF here -->
-![Application Preview](preview.gif)
+![Application Preview](reubuntu.gif)
 
 ---
 
