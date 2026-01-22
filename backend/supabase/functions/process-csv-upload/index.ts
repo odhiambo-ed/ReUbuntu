@@ -4,22 +4,16 @@ import Papa from "papaparse";
 import { corsHeaders, handleCors } from "../_shared/cors.ts";
 import { createServiceSupabaseClient } from "../_shared/supabase.ts";
 import { broadcastProgress } from "../_shared/realtime.ts";
+import {
+  type CSVRow,
+  validateRow,
+  normalizeCategory,
+  normalizeCondition,
+} from "./helpers.ts";
 
 interface ProcessRequest {
   upload_id: string;
   user_id: string;
-}
-
-interface CSVRow {
-  merchant_id: string;
-  sku: string;
-  title: string;
-  brand?: string;
-  category: string;
-  condition: string;
-  original_price: string;
-  currency: string;
-  quantity: string;
 }
 
 interface InventoryItemInsert {
@@ -57,9 +51,7 @@ serve(async (req: Request) => {
     // Initialize Supabase client with service role for admin operations
     const supabase = createServiceSupabaseClient();
 
-    // ─────────────────────────────────────────────────────────────
     // STEP 1: Mark upload as processing
-    // ─────────────────────────────────────────────────────────────
     await supabase
       .from("uploads")
       .update({
@@ -75,9 +67,7 @@ serve(async (req: Request) => {
       progress: 0,
     });
 
-    // ─────────────────────────────────────────────────────────────
     // STEP 2: Download CSV from Storage
-    // ─────────────────────────────────────────────────────────────
     const { data: upload, error: uploadError } = await supabase
       .from("uploads")
       .select("file_path")
@@ -105,9 +95,7 @@ serve(async (req: Request) => {
 
     const csvText = await fileData.text();
 
-    // ─────────────────────────────────────────────────────────────
     // STEP 3: Parse CSV
-    // ─────────────────────────────────────────────────────────────
     const parseResult = Papa.parse<CSVRow>(csvText, {
       header: true,
       skipEmptyLines: true,
@@ -130,9 +118,7 @@ serve(async (req: Request) => {
       total_rows: totalRows,
     });
 
-    // ─────────────────────────────────────────────────────────────
     // STEP 4: Validate & Process Rows
-    // ─────────────────────────────────────────────────────────────
     const validItems: InventoryItemInsert[] = [];
     const errors: UploadErrorInsert[] = [];
     const BATCH_SIZE = 100;
@@ -186,9 +172,7 @@ serve(async (req: Request) => {
       }
     }
 
-    // ─────────────────────────────────────────────────────────────
     // STEP 5: Bulk Insert Valid Items
-    // ─────────────────────────────────────────────────────────────
     await broadcastProgress(supabase, upload_id, {
       status: "processing",
       message: `Inserting ${validItems.length} valid items...`,
@@ -223,9 +207,7 @@ serve(async (req: Request) => {
       });
     }
 
-    // ─────────────────────────────────────────────────────────────
     // STEP 6: Insert Errors
-    // ─────────────────────────────────────────────────────────────
     if (errors.length > 0) {
       for (let i = 0; i < errors.length; i += BATCH_SIZE) {
         const batch = errors.slice(i, i + BATCH_SIZE);
@@ -233,9 +215,7 @@ serve(async (req: Request) => {
       }
     }
 
-    // ─────────────────────────────────────────────────────────────
     // STEP 7: Finalize Upload
-    // ─────────────────────────────────────────────────────────────
     const finalStatus = errors.length === totalRows ? "failed" : "completed";
 
     await supabase
@@ -290,143 +270,6 @@ serve(async (req: Request) => {
     );
   }
 });
-
-// ─────────────────────────────────────────────────────────────────
-// Helper Functions
-// ─────────────────────────────────────────────────────────────────
-
-interface ValidationResult {
-  isValid: boolean;
-  errors: Array<{ field: string; type: string; message: string }>;
-}
-
-function validateRow(row: CSVRow, _rowNumber: number): ValidationResult {
-  const errors: Array<{ field: string; type: string; message: string }> = [];
-
-  // Required fields
-  if (!row.merchant_id?.trim()) {
-    errors.push({
-      field: "merchant_id",
-      type: "missing_required",
-      message: "Merchant ID is required",
-    });
-  }
-  if (!row.sku?.trim()) {
-    errors.push({
-      field: "sku",
-      type: "missing_required",
-      message: "SKU is required",
-    });
-  }
-  if (!row.title?.trim()) {
-    errors.push({
-      field: "title",
-      type: "missing_required",
-      message: "Title is required",
-    });
-  }
-  if (!row.category?.trim()) {
-    errors.push({
-      field: "category",
-      type: "missing_required",
-      message: "Category is required",
-    });
-  }
-  if (!row.condition?.trim()) {
-    errors.push({
-      field: "condition",
-      type: "missing_required",
-      message: "Condition is required",
-    });
-  }
-  if (!row.original_price?.trim()) {
-    errors.push({
-      field: "original_price",
-      type: "missing_required",
-      message: "Original price is required",
-    });
-  }
-
-  // Validate condition value
-  const validConditions = ["new", "like_new", "like new", "good", "fair"];
-  if (
-    row.condition &&
-    !validConditions.includes(row.condition.toLowerCase().trim())
-  ) {
-    errors.push({
-      field: "condition",
-      type: "invalid_value",
-      message: `Condition must be one of: new, like_new, good, fair`,
-    });
-  }
-
-  // Validate category value
-  const validCategories = [
-    "tops",
-    "bottoms",
-    "outerwear",
-    "jackets",
-    "dresses",
-    "knitwear",
-    "shoes",
-    "accessories",
-    "activewear",
-  ];
-  if (
-    row.category &&
-    !validCategories.includes(row.category.toLowerCase().trim())
-  ) {
-    errors.push({
-      field: "category",
-      type: "invalid_value",
-      message: `Category must be one of: ${validCategories.join(", ")}`,
-    });
-  }
-
-  // Validate price is numeric and positive
-  const price = parseFloat(row.original_price);
-  if (row.original_price && (isNaN(price) || price <= 0)) {
-    errors.push({
-      field: "original_price",
-      type: "invalid_format",
-      message: "Original price must be a positive number",
-    });
-  }
-
-  // Validate quantity is positive integer
-  const qty = parseInt(row.quantity);
-  if (row.quantity && (isNaN(qty) || qty < 1)) {
-    errors.push({
-      field: "quantity",
-      type: "invalid_format",
-      message: "Quantity must be a positive integer",
-    });
-  }
-
-  return { isValid: errors.length === 0, errors };
-}
-
-function normalizeCategory(category: string): string {
-  const mapping: Record<string, string> = {
-    tops: "Tops",
-    bottoms: "Bottoms",
-    outerwear: "Outerwear",
-    jackets: "Jackets",
-    dresses: "Dresses",
-    knitwear: "Knitwear",
-    shoes: "Shoes",
-    accessories: "Accessories",
-    activewear: "Activewear",
-  };
-  return mapping[category.toLowerCase().trim()] || category;
-}
-
-function normalizeCondition(condition: string): string {
-  const normalized = condition.toLowerCase().trim().replace(/\s+/g, "_");
-  return ["new", "like_new", "good", "fair"].includes(normalized)
-    ? normalized
-    : "good";
-}
 
 /* To invoke locally:
 
