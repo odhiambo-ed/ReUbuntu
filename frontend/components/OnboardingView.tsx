@@ -47,7 +47,7 @@ const steps = [
 ];
 
 const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) => {
-  const { user } = useAuth();
+  useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
