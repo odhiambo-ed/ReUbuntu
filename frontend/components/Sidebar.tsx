@@ -15,13 +15,13 @@ import {
   Loader2,
 } from "lucide-react";
 import ChecklistItem from "./ChecklistItem";
-import { Upload as UploadType } from "../types";
+import type { UploadSummary } from "@/features/uploads";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
-  uploads: UploadType[];
+  uploads: UploadSummary[];
   stats: {
     totalItems: number;
     pendingPrice: number;
