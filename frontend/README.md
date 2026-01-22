@@ -6,6 +6,7 @@ A modern Next.js 16 application for the Muna Deadstock Intake & Listing Portal. 
 [![React](https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-14a1f0?style=for-the-badge&logo=vercel&logoColor=white)](https://re-ubuntu.vercel.app)
 
 ---
 
