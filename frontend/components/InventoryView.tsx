@@ -14,59 +14,142 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import type { InventoryItem } from "@/features/inventory";
-
-type StatusType = "pending" | "priced" | "listed" | "unlisted" | "sold";
+import type {
+  InventoryItem,
+  InventoryFilters,
+  ConditionType,
+  StatusType,
+} from "@/features/inventory";
 import FilterSelect from "./FilterSelect";
 import Checkbox from "./Checkbox";
 import StatusBadge from "./StatusBadge";
 
 interface InventoryViewProps {
   inventory: InventoryItem[];
+  isLoading?: boolean;
+  totalCount?: number;
+  currentPage?: number;
+  totalPages?: number;
+  limit?: number;
+  filters?: InventoryFilters;
   onUpdateItem: (item: InventoryItem) => void;
   onDeleteItem: (id: number) => void;
   onBulkStatusUpdate: (ids: number[], status: StatusType) => void;
+  onPageChange?: (page: number) => void;
+  onFiltersChange?: (filters: InventoryFilters) => void;
 }
 
 const InventoryView: React.FC<InventoryViewProps> = ({
   inventory,
+  isLoading = false,
+  totalCount = 0,
+  currentPage = 1,
+  totalPages = 1,
+  limit = 10,
+  filters = {},
   onUpdateItem,
   onDeleteItem,
   onBulkStatusUpdate,
+  onPageChange,
+  onFiltersChange,
 }) => {
-  // Props available for future use
-  void onUpdateItem;
   void onDeleteItem;
-  const [searchTerm, setSearchTerm] = useState("");
+  void onUpdateItem;
+  const [searchTerm, setSearchTerm] = useState(filters.search || "");
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [activeFilters, setActiveFilters] = useState({
-    category: "All Categories",
-    condition: "All Conditions",
-    status: "All Statuses",
+    category: filters.category || "All Categories",
+    condition: filters.condition || "All Conditions",
+    status: filters.status || "All Statuses",
   });
 
   const filteredInventory = useMemo(() => {
-    return inventory.filter((item) => {
-      const matchesSearch =
-        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.brand?.toLowerCase().includes(searchTerm.toLowerCase());
+    return inventory;
+  }, [inventory]);
 
-      const matchesCategory =
-        activeFilters.category === "All Categories" ||
-        item.category === activeFilters.category;
-      const matchesCondition =
-        activeFilters.condition === "All Conditions" ||
-        item.condition === activeFilters.condition;
-      const matchesStatus =
-        activeFilters.status === "All Statuses" ||
-        item.status === activeFilters.status;
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    if (onFiltersChange) {
+      onFiltersChange({
+        ...filters,
+        search: value || undefined,
+      });
+    }
+  };
 
-      return (
-        matchesSearch && matchesCategory && matchesCondition && matchesStatus
-      );
+  const handleFilterChange = (filterType: string, value: string) => {
+    const newFilters = { ...activeFilters, [filterType]: value };
+    setActiveFilters(newFilters);
+
+    if (onFiltersChange) {
+      const apiFilters: InventoryFilters = {
+        ...filters,
+        search: searchTerm || undefined,
+      };
+
+      if (value !== "All Categories") apiFilters.category = value;
+      if (value !== "All Conditions")
+        apiFilters.condition = value as ConditionType;
+      if (value !== "All Statuses") apiFilters.status = value as StatusType;
+
+      onFiltersChange(apiFilters);
+    }
+  };
+
+  const handleResetFilters = () => {
+    setActiveFilters({
+      category: "All Categories",
+      condition: "All Conditions",
+      status: "All Statuses",
     });
-  }, [inventory, searchTerm, activeFilters]);
+    setSearchTerm("");
+
+    if (onFiltersChange) {
+      onFiltersChange({});
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    if (onPageChange && page >= 1 && page <= totalPages) {
+      onPageChange(page);
+    }
+  };
+
+  const getPaginationInfo = () => {
+    const start = (currentPage - 1) * limit + 1;
+    const end = Math.min(currentPage * limit, totalCount);
+    return { start, end };
+  };
+
+  const renderPaginationButtons = () => {
+    const buttons = [];
+    const maxVisiblePages = 5;
+
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`w-9 h-9 flex items-center justify-center font-bold rounded-lg transition-all ${
+            i === currentPage
+              ? "bg-teal-500 text-white shadow-lg shadow-teal-500/20"
+              : "text-slate-500 hover:bg-slate-50"
+          }`}
+        >
+          {i}
+        </button>,
+      );
+    }
+
+    return buttons;
+  };
 
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredInventory.length) {
@@ -139,6 +222,14 @@ const InventoryView: React.FC<InventoryViewProps> = ({
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 h-full flex flex-col overflow-hidden">
+      {isLoading && (
+        <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-50">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-slate-600">Loading...</span>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-3xl font-bold text-slate-900">
@@ -146,7 +237,7 @@ const InventoryView: React.FC<InventoryViewProps> = ({
           </h2>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-slate-500 flex items-center gap-1">
-              <Tag size={14} /> {inventory.length} Total SKU
+              <Tag size={14} /> {totalCount} Total SKU
             </span>
             <span className="text-teal-600 font-bold text-xs bg-teal-50 px-2 py-0.5 rounded">
               +12% this month
@@ -183,16 +274,14 @@ const InventoryView: React.FC<InventoryViewProps> = ({
             placeholder="Search SKU, Title, or Brand..."
             className="w-full pl-11 pr-4 py-2 bg-slate-50 border-transparent focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 rounded-xl outline-none text-sm transition-all"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
           />
         </div>
         <div className="flex items-center gap-2 w-full md:w-auto">
           <FilterSelect
             label="Category"
             value={activeFilters.category}
-            onChange={(val) =>
-              setActiveFilters((prev) => ({ ...prev, category: val }))
-            }
+            onChange={(val) => handleFilterChange("category", val)}
             options={[
               "All Categories",
               "Outerwear",
@@ -207,27 +296,17 @@ const InventoryView: React.FC<InventoryViewProps> = ({
           <FilterSelect
             label="Condition"
             value={activeFilters.condition}
-            onChange={(val) =>
-              setActiveFilters((prev) => ({ ...prev, condition: val }))
-            }
+            onChange={(val) => handleFilterChange("condition", val)}
             options={["All Conditions", "new", "like_new", "good", "fair"]}
           />
           <FilterSelect
             label="Status"
             value={activeFilters.status}
-            onChange={(val) =>
-              setActiveFilters((prev) => ({ ...prev, status: val }))
-            }
+            onChange={(val) => handleFilterChange("status", val)}
             options={["All Statuses", "pending", "priced", "listed", "sold"]}
           />
           <button
-            onClick={() =>
-              setActiveFilters({
-                category: "All Categories",
-                condition: "All Conditions",
-                status: "All Statuses",
-              })
-            }
+            onClick={handleResetFilters}
             className="p-2 text-slate-400 hover:text-slate-900 transition-colors"
             title="Reset Filters"
           >
@@ -386,24 +465,29 @@ const InventoryView: React.FC<InventoryViewProps> = ({
 
         <div className="p-6 border-t border-slate-100 flex items-center justify-between shrink-0">
           <p className="text-sm text-slate-400 font-medium">
-            Showing 1-10 of {inventory.length} items
+            {totalCount > 0 ? (
+              <>
+                Showing {getPaginationInfo().start}-{getPaginationInfo().end} of{" "}
+                {totalCount} items
+              </>
+            ) : (
+              <>No items found</>
+            )}
           </p>
           <div className="flex items-center gap-2">
-            <button className="p-2 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-all border border-slate-100">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="p-2 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-all border border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <ChevronLeft size={18} />
             </button>
-            <div className="flex items-center">
-              <button className="w-9 h-9 flex items-center justify-center bg-teal-500 text-white font-bold rounded-lg shadow-lg shadow-teal-500/20">
-                1
-              </button>
-              <button className="w-9 h-9 flex items-center justify-center text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-all">
-                2
-              </button>
-              <button className="w-9 h-9 flex items-center justify-center text-slate-500 font-bold hover:bg-slate-50 rounded-lg transition-all">
-                3
-              </button>
-            </div>
-            <button className="p-2 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-all border border-slate-100">
+            <div className="flex items-center">{renderPaginationButtons()}</div>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="p-2 text-slate-400 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-all border border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <ChevronRight size={18} />
             </button>
           </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import InventoryView from "@/components/InventoryView";
 import {
   useInventoryItems,
@@ -8,30 +8,38 @@ import {
   useDeleteInventoryItem,
   useBulkUpdateInventoryStatus,
 } from "@/features/inventory";
-import type { InventoryItem } from "@/features/inventory";
-import { Loader2 } from "lucide-react";
+import type { InventoryItem, InventoryFilters } from "@/features/inventory";
 import { toast } from "sonner";
 
 type StatusType = "pending" | "priced" | "listed" | "unlisted" | "sold";
 
 export default function InventoryPage() {
-  const { data: inventoryData, isLoading } = useInventoryItems({
+  const [filters, setFilters] = useState<InventoryFilters>({
     page: 1,
-    limit: 100,
+    limit: 10,
   });
+
+  const {
+    data: inventoryData,
+    isLoading,
+    refetch,
+  } = useInventoryItems(filters);
   const updateItem = useUpdateInventoryItem();
   const deleteItem = useDeleteInventoryItem();
   const bulkUpdateStatus = useBulkUpdateInventoryStatus();
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
-      </div>
-    );
-  }
-
   const inventory = inventoryData?.data ?? [];
+  const totalCount = inventoryData?.count ?? 0;
+  const currentPage = inventoryData?.page ?? 1;
+  const totalPages = inventoryData?.totalPages ?? 1;
+
+  const handlePageChange = (page: number) => {
+    setFilters((prev) => ({ ...prev, page }));
+  };
+
+  const handleFiltersChange = (newFilters: InventoryFilters) => {
+    setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
+  };
 
   const handleUpdateItem = async (updatedItem: InventoryItem) => {
     try {
@@ -50,6 +58,7 @@ export default function InventoryPage() {
         },
       });
       toast.success("Item updated successfully");
+      refetch();
     } catch (error) {
       toast.error("Failed to update item");
       console.error(error);
@@ -60,6 +69,7 @@ export default function InventoryPage() {
     try {
       await deleteItem.mutateAsync(id);
       toast.success("Item deleted successfully");
+      refetch();
     } catch (error) {
       toast.error("Failed to delete item");
       console.error(error);
@@ -70,6 +80,7 @@ export default function InventoryPage() {
     try {
       await bulkUpdateStatus.mutateAsync({ ids, status });
       toast.success(`${ids.length} items updated to ${status}`);
+      refetch();
     } catch (error) {
       toast.error("Failed to update items");
       console.error(error);
@@ -79,9 +90,17 @@ export default function InventoryPage() {
   return (
     <InventoryView
       inventory={inventory}
+      isLoading={isLoading}
+      totalCount={totalCount}
+      currentPage={currentPage}
+      totalPages={totalPages}
+      limit={filters.limit || 10}
+      filters={filters}
       onUpdateItem={handleUpdateItem}
       onDeleteItem={handleDeleteItem}
       onBulkStatusUpdate={handleBulkStatusUpdate}
+      onPageChange={handlePageChange}
+      onFiltersChange={handleFiltersChange}
     />
   );
 }
