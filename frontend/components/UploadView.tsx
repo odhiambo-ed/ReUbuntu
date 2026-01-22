@@ -84,7 +84,7 @@ const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
       setUploadProgress(30);
 
       const response = await fetch(
-        "https://jcyoebmpyumytxiznpxa.supabase.co/functions/v1/process-csv-upload",
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/process-csv-upload`,
         {
           method: "POST",
           headers: {
