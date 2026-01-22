@@ -1,0 +1,24 @@
+{
+  "version": "5",
+  "specifiers": {
+    "npm:@types/node@*": "24.2.0"
+  },
+  "npm": {
+    "@types/node@24.2.0": {
+      "integrity": "sha512-3xyG3pMCq3oYCNg7/ZP+E1ooTaGB4cG8JWRsqqOYQdbWNY4zbaV0Ennrd7stjiJEFZCaybcIgpTjJWHRfBSIDw==",
+      "dependencies": [
+        "undici-types"
+      ]
+    },
+    "undici-types@7.10.0": {
+      "integrity": "sha512-t5Fy/nfn+14LuOc2KNYg75vZqClpAiqscVvMygNnlsHBFpSXdJaYtXMcdNLpl/Qvc3P2cB3s6lOV51nqsFq4ag=="
+    }
+  },
+  "redirects": {
+    "https://esm.sh/@types/papaparse@~5.5.0/index.d.ts": "https://esm.sh/@types/papaparse@5.5.2/index.d.ts"
+  },
+  "remote": {
+    "https://esm.sh/papaparse@5.4.1": "219ba0c48cb54e9dff897b36f769042c63a965083bcde16e0a06e11fbd22c185",
+    "https://esm.sh/papaparse@5.4.1/denonext/papaparse.mjs": "3e14449cfdc824b87de9fd9d08e85576b5677b6dce8dad28a6d7fcb938e9341b"
+  }
+}
