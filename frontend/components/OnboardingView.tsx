@@ -8,7 +8,10 @@ import {
   User,
   Building,
   MapPin,
+  Loader2,
 } from "lucide-react";
+import { useUpdateProfile } from "@/features/profile";
+import { toast } from "sonner";
 
 interface OnboardingViewProps {
   onComplete: () => void;
@@ -44,12 +47,43 @@ const steps = [
 
 const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [fullName, setFullName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [address, setAddress] = useState("");
 
-  const handleNext = () => {
+  const updateProfile = useUpdateProfile();
+
+  const handleNext = async () => {
+    if (currentStep === 0 && !fullName.trim()) {
+      toast.error("Please enter your full name");
+      return;
+    }
+    if (currentStep === 1 && !companyName.trim()) {
+      toast.error("Please enter your company name");
+      return;
+    }
+    if (currentStep === 2 && !address.trim()) {
+      toast.error("Please enter your business address");
+      return;
+    }
+
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      onComplete();
+      try {
+        await updateProfile.mutateAsync({
+          full_name: fullName.trim(),
+          metadata: {
+            company_name: companyName.trim(),
+            address: address.trim(),
+          },
+        });
+        toast.success("Profile setup complete!");
+        onComplete();
+      } catch (error) {
+        toast.error("Failed to save profile. Please try again.");
+        console.error("Profile update error:", error);
+      }
     }
   };
 
@@ -88,6 +122,8 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) => {
               <input
                 type="text"
                 placeholder="Enter your full name..."
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 className="w-full p-6 bg-slate-50 border-2 border-transparent focus:border-teal-500 focus:bg-white rounded-3xl text-lg font-bold outline-none transition-all shadow-inner"
               />
             )}
@@ -95,6 +131,8 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) => {
               <input
                 type="text"
                 placeholder="Enter company name..."
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
                 className="w-full p-6 bg-slate-50 border-2 border-transparent focus:border-teal-500 focus:bg-white rounded-3xl text-lg font-bold outline-none transition-all shadow-inner"
               />
             )}
@@ -102,6 +140,8 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) => {
               <textarea
                 placeholder="Enter business address..."
                 rows={3}
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
                 className="w-full p-6 bg-slate-50 border-2 border-transparent focus:border-teal-500 focus:bg-white rounded-3xl text-lg font-bold outline-none transition-all shadow-inner no-scrollbar resize-none"
               ></textarea>
             )}
@@ -124,10 +164,22 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) => {
 
           <button
             onClick={handleNext}
-            className="w-full py-6 bg-teal-500 hover:bg-teal-600 text-white font-black rounded-3xl transition-all shadow-2xl shadow-teal-500/30 active:scale-95 flex items-center justify-center gap-3 text-xl"
+            disabled={updateProfile.isPending}
+            className="w-full py-6 bg-teal-500 hover:bg-teal-600 text-white font-black rounded-3xl transition-all shadow-2xl shadow-teal-500/30 active:scale-95 flex items-center justify-center gap-3 text-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {currentStep === steps.length - 1 ? "Go to Dashboard" : "Next Step"}
-            <ChevronRight size={24} />
+            {updateProfile.isPending ? (
+              <>
+                <Loader2 size={24} className="animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                {currentStep === steps.length - 1
+                  ? "Go to Dashboard"
+                  : "Next Step"}
+                <ChevronRight size={24} />
+              </>
+            )}
           </button>
         </div>
       </div>
