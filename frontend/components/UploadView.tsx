@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   CloudUpload,
@@ -12,25 +12,98 @@ import {
   MoreVertical,
   Download,
   Trash2,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
-import type { UploadSummary } from "@/features/uploads";
-import { uploadCsvFile } from "@/features/uploads/api";
+import type { UploadSummary, UploadError } from "@/features/uploads";
+import { uploadCsvFile, fetchUploadErrors } from "@/features/uploads/api";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface ProgressPayload {
+  status?: "processing" | "completed" | "failed";
+  progress?: number;
+  message?: string;
+  total_rows?: number;
+  success_count?: number;
+  error_count?: number;
+}
 
 interface UploadViewProps {
   uploads: UploadSummary[];
 }
 
 const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
+  const { user } = useAuth();
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [successCount, setSuccessCount] = useState(0);
+  const [errorCount, setErrorCount] = useState(0);
   const [totalRows, setTotalRows] = useState(0);
+  const [currentUploadId, setCurrentUploadId] = useState<number | null>(null);
+  const [validationErrors, setValidationErrors] = useState<UploadError[]>([]);
+  const [showAllErrors, setShowAllErrors] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const channelRef = useRef<ReturnType<
+    ReturnType<typeof createClient>["channel"]
+  > | null>(null);
+
+  const fetchErrors = useCallback(async (uploadId: number) => {
+    try {
+      const errors = await fetchUploadErrors(uploadId);
+      setValidationErrors(errors);
+    } catch (err) {
+      console.error("Failed to fetch errors:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!currentUploadId || !isUploading) return;
+
+    const supabase = createClient();
+    const channel = supabase.channel(`upload:${currentUploadId}`);
+
+    channel
+      .on(
+        "broadcast",
+        { event: "progress" },
+        ({ payload }: { payload: ProgressPayload }) => {
+          if (payload.progress !== undefined) {
+            setUploadProgress(payload.progress);
+          }
+          if (payload.message) {
+            setProgressMessage(payload.message);
+          }
+          if (payload.status === "completed" || payload.status === "failed") {
+            setSuccessCount(payload.success_count ?? 0);
+            setErrorCount(payload.error_count ?? 0);
+            setTotalRows(payload.total_rows ?? 0);
+            setIsUploading(false);
+            if (payload.status === "completed") {
+              setShowSuccess(true);
+              if (payload.error_count && payload.error_count > 0) {
+                fetchErrors(currentUploadId);
+              }
+            } else {
+              setUploadError(payload.message || "Processing failed");
+            }
+          }
+        },
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [currentUploadId, isUploading, fetchErrors]);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -66,22 +139,22 @@ const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
     if (!selectedFile) return;
     setIsUploading(true);
     setUploadProgress(0);
+    setProgressMessage("Uploading file...");
     setUploadError(null);
+    setValidationErrors([]);
 
     try {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
       if (!user) {
         throw new Error("User not authenticated");
       }
 
-      setUploadProgress(10);
-      const { uploadId } = await uploadCsvFile(selectedFile);
+      setUploadProgress(5);
+      setProgressMessage("Uploading to storage...");
+      const { uploadId } = await uploadCsvFile(selectedFile, user.id);
+      setCurrentUploadId(uploadId);
 
-      setUploadProgress(30);
+      setUploadProgress(10);
+      setProgressMessage("Starting CSV processing...");
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/process-csv-upload`,
@@ -102,9 +175,13 @@ const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
       if (result.success) {
         setUploadProgress(100);
         setSuccessCount(result.success_count);
+        setErrorCount(result.error_count);
         setTotalRows(result.total_rows);
         setIsUploading(false);
         setShowSuccess(true);
+        if (result.error_count > 0) {
+          await fetchErrors(uploadId);
+        }
       } else {
         throw new Error(result.error || "Processing failed");
       }
@@ -114,14 +191,55 @@ const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
     }
   };
 
+  const downloadTemplate = () => {
+    const link = document.createElement("a");
+    link.href = "/files/sample_deadstock_inventory.csv";
+    link.download = "sample_deadstock_inventory.csv";
+    link.click();
+  };
+
+  const downloadErrorReport = () => {
+    if (validationErrors.length === 0) return;
+
+    const headers = ["Row", "Field", "Error Type", "Message"];
+    const csvRows = validationErrors.map((err) => [
+      err.row_number,
+      err.field_name || "N/A",
+      err.error_type,
+      `"${err.error_message.replace(/"/g, '""')}"`,
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...csvRows.map((row) => row.join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `upload-errors-${currentUploadId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const reset = () => {
     setSelectedFile(null);
     setIsUploading(false);
     setUploadProgress(0);
+    setProgressMessage("");
     setShowSuccess(false);
     setUploadError(null);
     setSuccessCount(0);
+    setErrorCount(0);
     setTotalRows(0);
+    setCurrentUploadId(null);
+    setValidationErrors([]);
+    setShowAllErrors(false);
+    if (channelRef.current) {
+      channelRef.current.unsubscribe();
+      channelRef.current = null;
+    }
   };
 
   return (
@@ -181,8 +299,9 @@ const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
                 <p className="text-sm text-slate-400">
                   Supported formats: .csv, .xlsx. Max file size: 10MB.
                 </p>
-                <p className="text-xs text-slate-400 font-medium">
-                  Use our standard template for faster processing.
+                <p className="text-xs text-teal-600 font-semibold mt-2">
+                  💡 New here? Download the template below, fill in your
+                  inventory data, then upload!
                 </p>
               </div>
             )}
@@ -212,7 +331,11 @@ const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
                 >
                   Browse Files
                 </button>
-                <button className="px-8 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 shadow-xl shadow-slate-900/10 transition-all active:scale-95 flex items-center gap-2">
+                <button
+                  onClick={downloadTemplate}
+                  className="px-8 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 shadow-xl shadow-slate-900/10 transition-all active:scale-95 flex items-center gap-2"
+                  title="Download a sample CSV template, fill in your inventory data, then upload"
+                >
                   <Download size={18} /> Download Template
                 </button>
               </>
@@ -264,7 +387,7 @@ const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
               ></div>
             </div>
             <p className="text-xs text-slate-400 font-semibold italic">
-              Analyzing merchant_id and SKU uniqueness...
+              {progressMessage || "Analyzing merchant_id and SKU uniqueness..."}
             </p>
           </div>
         </div>
@@ -310,6 +433,106 @@ const UploadView: React.FC<UploadViewProps> = ({ uploads }) => {
                 eligible items.
               </p>
             </div>
+
+            {/* Stats Summary */}
+            <div className="flex gap-6 py-4">
+              <div className="text-center">
+                <p className="text-3xl font-black text-teal-600">
+                  {successCount}
+                </p>
+                <p className="text-xs font-bold text-slate-400 uppercase">
+                  Imported
+                </p>
+              </div>
+              <div className="w-px bg-slate-200" />
+              <div className="text-center">
+                <p className="text-3xl font-black text-red-500">{errorCount}</p>
+                <p className="text-xs font-bold text-slate-400 uppercase">
+                  Errors
+                </p>
+              </div>
+              <div className="w-px bg-slate-200" />
+              <div className="text-center">
+                <p className="text-3xl font-black text-slate-600">
+                  {totalRows > 0
+                    ? Math.round((successCount / totalRows) * 100)
+                    : 0}
+                  %
+                </p>
+                <p className="text-xs font-bold text-slate-400 uppercase">
+                  Success Rate
+                </p>
+              </div>
+            </div>
+
+            {/* Error Details Section */}
+            {errorCount > 0 && validationErrors.length > 0 && (
+              <div className="w-full max-w-2xl bg-red-50 border border-red-200 rounded-2xl p-6 text-left">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 text-red-600">
+                    <AlertTriangle size={20} />
+                    <span className="font-bold">
+                      {errorCount} Validation Errors
+                    </span>
+                  </div>
+                  <button
+                    onClick={downloadErrorReport}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-red-200 text-red-600 font-bold text-sm rounded-xl hover:bg-red-100 transition-all"
+                  >
+                    <Download size={16} />
+                    Download Report
+                  </button>
+                </div>
+
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {(showAllErrors
+                    ? validationErrors
+                    : validationErrors.slice(0, 5)
+                  ).map((err, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-start gap-3 bg-white p-3 rounded-xl border border-red-100"
+                    >
+                      <span className="text-xs font-mono font-bold text-red-500 bg-red-100 px-2 py-1 rounded">
+                        Row {err.row_number}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-700">
+                          {err.field_name && (
+                            <span className="text-red-600">
+                              {err.field_name}:{" "}
+                            </span>
+                          )}
+                          {err.error_message}
+                        </p>
+                        <p className="text-xs text-slate-400 capitalize">
+                          {err.error_type.replace(/_/g, " ")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {validationErrors.length > 5 && (
+                  <button
+                    onClick={() => setShowAllErrors(!showAllErrors)}
+                    className="w-full mt-3 flex items-center justify-center gap-2 py-2 text-sm font-bold text-red-600 hover:text-red-700 transition-colors"
+                  >
+                    {showAllErrors ? (
+                      <>
+                        <ChevronUp size={16} /> Show Less
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown size={16} /> Show All{" "}
+                        {validationErrors.length} Errors
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="flex gap-4 pt-4">
               <Link
                 href="/dashboard/inventory"

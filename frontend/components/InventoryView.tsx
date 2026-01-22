@@ -92,6 +92,51 @@ const InventoryView: React.FC<InventoryViewProps> = ({
     setSelectedIds([]);
   };
 
+  const handleExportCsv = () => {
+    if (filteredInventory.length === 0) return;
+
+    const headers = [
+      "merchant_id",
+      "sku",
+      "title",
+      "brand",
+      "category",
+      "condition",
+      "original_price",
+      "resale_price",
+      "currency",
+      "quantity",
+      "status",
+    ];
+
+    const csvRows = filteredInventory.map((item) => [
+      item.merchant_id,
+      item.sku,
+      `"${item.title.replace(/"/g, '""')}"`,
+      item.brand ? `"${item.brand.replace(/"/g, '""')}"` : "",
+      item.category,
+      item.condition,
+      item.original_price,
+      item.resale_price ?? "",
+      item.currency,
+      item.quantity,
+      item.status,
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...csvRows.map((row) => row.join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `inventory-export-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 h-full flex flex-col overflow-hidden">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
@@ -109,7 +154,11 @@ const InventoryView: React.FC<InventoryViewProps> = ({
           </div>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 shadow-sm transition-all active:scale-95">
+          <button
+            onClick={handleExportCsv}
+            disabled={filteredInventory.length === 0}
+            className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 shadow-sm transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <Download size={18} />
             Export CSV
           </button>
