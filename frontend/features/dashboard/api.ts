@@ -27,10 +27,19 @@ interface StatusRow {
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   const supabase = createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
   // Fetch inventory stats
   const { data: inventoryData, error: inventoryError } = await supabase
     .from("inventory_with_pricing")
-    .select("status, resale_price");
+    .select("status, resale_price")
+    .eq("user_id", user.id);
 
   if (inventoryError) {
     throw new Error(inventoryError.message);
@@ -68,6 +77,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
   const { count: recentUploads } = await supabase
     .from("uploads")
     .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
     .gte("created_at", sevenDaysAgo.toISOString());
 
   return {
@@ -87,9 +97,18 @@ export async function fetchInventoryByCategory(): Promise<
 > {
   const supabase = createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
   const { data, error } = await supabase
     .from("inventory_with_pricing")
-    .select("category, resale_price");
+    .select("category, resale_price")
+    .eq("user_id", user.id);
 
   if (error) {
     throw new Error(error.message);
@@ -123,9 +142,18 @@ export async function fetchInventoryByCondition(): Promise<
 > {
   const supabase = createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
   const { data, error } = await supabase
     .from("inventory_with_pricing")
-    .select("condition");
+    .select("condition")
+    .eq("user_id", user.id);
 
   if (error) {
     throw new Error(error.message);
@@ -147,9 +175,18 @@ export async function fetchInventoryByCondition(): Promise<
 export async function fetchInventoryByStatus(): Promise<InventoryByStatus[]> {
   const supabase = createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
   const { data, error } = await supabase
     .from("inventory_with_pricing")
-    .select("status");
+    .select("status")
+    .eq("user_id", user.id);
 
   if (error) {
     throw new Error(error.message);

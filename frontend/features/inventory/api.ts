@@ -17,9 +17,18 @@ export async function fetchInventoryItems(
   const limit = filters.limit ?? DEFAULT_PAGE_SIZE;
   const offset = (page - 1) * limit;
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
   let query = supabase
     .from("inventory_with_pricing")
-    .select("*", { count: "exact" });
+    .select("*", { count: "exact" })
+    .eq("user_id", user.id);
 
   if (filters.status) {
     query = query.eq("status", filters.status);
@@ -60,10 +69,19 @@ export async function fetchInventoryItem(
 ): Promise<InventoryWithPricing> {
   const supabase = createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
   const { data, error } = await supabase
     .from("inventory_with_pricing")
     .select("*")
     .eq("id", id)
+    .eq("user_id", user.id)
     .single();
 
   if (error) {
@@ -103,10 +121,19 @@ export async function updateInventoryItem(
 ): Promise<InventoryWithPricing> {
   const supabase = createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
   const { error } = await supabase
     .from("inventory_items")
     .update({ ...input, updated_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("user_id", user.id);
 
   if (error) {
     throw new Error(error.message);
@@ -118,10 +145,19 @@ export async function updateInventoryItem(
 export async function deleteInventoryItem(id: number): Promise<void> {
   const supabase = createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
   const { error } = await supabase
     .from("inventory_items")
     .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("user_id", user.id);
 
   if (error) {
     throw new Error(error.message);
@@ -134,10 +170,19 @@ export async function bulkUpdateInventoryStatus(
 ): Promise<void> {
   const supabase = createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
   const { error } = await supabase
     .from("inventory_items")
     .update({ status, updated_at: new Date().toISOString() })
-    .in("id", ids);
+    .in("id", ids)
+    .eq("user_id", user.id);
 
   if (error) {
     throw new Error(error.message);

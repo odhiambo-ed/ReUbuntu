@@ -17,7 +17,18 @@ export async function fetchUploads(
   const limit = filters.limit ?? DEFAULT_PAGE_SIZE;
   const offset = (page - 1) * limit;
 
-  let query = supabase.from("upload_summary").select("*", { count: "exact" });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
+  let query = supabase
+    .from("upload_summary")
+    .select("*", { count: "exact" })
+    .eq("user_id", user.id);
 
   if (filters.status) {
     query = query.eq("status", filters.status);
@@ -45,10 +56,19 @@ export async function fetchUploads(
 export async function fetchUpload(id: number): Promise<UploadSummary> {
   const supabase = createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
   const { data, error } = await supabase
     .from("upload_summary")
     .select("*")
     .eq("id", id)
+    .eq("user_id", user.id)
     .single();
 
   if (error) {
@@ -62,6 +82,26 @@ export async function fetchUploadErrors(
   uploadId: number,
 ): Promise<UploadError[]> {
   const supabase = createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
+  // First verify the upload belongs to the user
+  const { data: upload, error: uploadError } = await supabase
+    .from("uploads")
+    .select("user_id")
+    .eq("id", uploadId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (uploadError || !upload) {
+    throw new Error("Upload not found or access denied");
+  }
 
   const { data, error } = await supabase
     .from("upload_errors")
