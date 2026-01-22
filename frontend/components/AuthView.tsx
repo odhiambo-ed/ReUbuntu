@@ -1,14 +1,81 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail, Lock, ArrowRight, Chrome, ShieldCheck } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  ArrowRight,
+  Chrome,
+  ShieldCheck,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AuthViewProps {
-  onLogin: () => void;
+  onSuccess?: () => void;
+  errorMessage?: string | null;
 }
 
-const AuthView: React.FC<AuthViewProps> = ({ onLogin }) => {
+const AuthView: React.FC<AuthViewProps> = ({ onSuccess, errorMessage }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(errorMessage || null);
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const { signInWithEmail, signUpWithEmail, signInWithGoogle } = useAuth();
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMessage(null);
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        const { error } = await signInWithEmail(email, password);
+        if (error) {
+          setError(error.message);
+        } else {
+          onSuccess?.();
+        }
+      } else {
+        const { error } = await signUpWithEmail(email, password);
+        if (error) {
+          setError(error.message);
+        } else {
+          setSuccessMessage(
+            "Check your email to confirm your account before signing in.",
+          );
+          setEmail("");
+          setPassword("");
+        }
+      }
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    setError(null);
+    setLoading(true);
+
+    try {
+      const { error } = await signInWithGoogle();
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+      }
+      // If no error, the user will be redirected to Google OAuth
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-6">
@@ -86,9 +153,32 @@ const AuthView: React.FC<AuthViewProps> = ({ onLogin }) => {
               </p>
             </div>
 
-            <div className="space-y-6">
-              <button className="w-full flex items-center justify-center gap-3 py-4 bg-white border-2 border-slate-100 rounded-2xl hover:bg-slate-50 font-black text-slate-700 transition-all text-sm shadow-sm active:scale-[0.98]">
-                <Chrome size={20} /> Continue with Google
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3 text-red-700">
+                <AlertCircle size={20} />
+                <p className="text-sm font-medium">{error}</p>
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-2xl text-green-700">
+                <p className="text-sm font-medium">{successMessage}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleEmailAuth} className="space-y-6">
+              <button
+                type="button"
+                onClick={handleGoogleAuth}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 py-4 bg-white border-2 border-slate-100 rounded-2xl hover:bg-slate-50 font-black text-slate-700 transition-all text-sm shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <Chrome size={20} />
+                )}
+                Continue with Google
               </button>
 
               <div className="relative flex items-center py-4">
@@ -111,8 +201,12 @@ const AuthView: React.FC<AuthViewProps> = ({ onLogin }) => {
                     />
                     <input
                       type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       placeholder="alex@retold.io"
-                      className="w-full pl-14 pr-5 py-4 bg-slate-50 border-2 border-transparent focus:bg-white focus:border-teal-500 rounded-2xl text-sm font-bold transition-all outline-none"
+                      required
+                      disabled={loading}
+                      className="w-full pl-14 pr-5 py-4 bg-slate-50 border-2 border-transparent focus:bg-white focus:border-teal-500 rounded-2xl text-sm font-bold transition-all outline-none disabled:opacity-50"
                     />
                   </div>
                 </div>
@@ -128,31 +222,48 @@ const AuthView: React.FC<AuthViewProps> = ({ onLogin }) => {
                     />
                     <input
                       type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pl-14 pr-5 py-4 bg-slate-50 border-2 border-transparent focus:bg-white focus:border-teal-500 rounded-2xl text-sm font-bold transition-all outline-none"
+                      required
+                      minLength={6}
+                      disabled={loading}
+                      className="w-full pl-14 pr-5 py-4 bg-slate-50 border-2 border-transparent focus:bg-white focus:border-teal-500 rounded-2xl text-sm font-bold transition-all outline-none disabled:opacity-50"
                     />
                   </div>
                 </div>
               </div>
 
               <button
-                onClick={onLogin}
-                className="w-full py-5 bg-teal-500 hover:bg-teal-600 text-white font-black rounded-2xl transition-all shadow-xl shadow-teal-500/20 active:scale-95 flex items-center justify-center gap-3 text-lg mt-4"
+                type="submit"
+                disabled={loading}
+                className="w-full py-5 bg-teal-500 hover:bg-teal-600 text-white font-black rounded-2xl transition-all shadow-xl shadow-teal-500/20 active:scale-95 flex items-center justify-center gap-3 text-lg mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLogin ? "Sign In" : "Create Account"}
-                <ArrowRight size={22} />
+                {loading ? (
+                  <Loader2 size={22} className="animate-spin" />
+                ) : (
+                  <>
+                    {isLogin ? "Sign In" : "Create Account"}
+                    <ArrowRight size={22} />
+                  </>
+                )}
               </button>
 
               <p className="text-center text-sm text-slate-500 font-medium">
                 {isLogin ? "New to the platform?" : "Already a merchant?"}{" "}
                 <button
-                  onClick={() => setIsLogin(!isLogin)}
+                  type="button"
+                  onClick={() => {
+                    setIsLogin(!isLogin);
+                    setError(null);
+                    setSuccessMessage(null);
+                  }}
                   className="font-black text-teal-600 hover:text-teal-700 underline underline-offset-4"
                 >
                   {isLogin ? "Get started" : "Login now"}
                 </button>
               </p>
-            </div>
+            </form>
           </div>
         </div>
       </div>
