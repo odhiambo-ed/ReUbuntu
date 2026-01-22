@@ -1,15 +1,22 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import AuthView from "@/components/AuthView";
 
 export default function AuthPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
 
-  const handleLogin = () => {
-    router.push("/onboarding");
+  const handleSuccess = () => {
+    router.push("/dashboard");
   };
 
-  return <AuthView onLogin={handleLogin} />;
+  const errorMessage =
+    error === "auth_callback_error"
+      ? "Authentication failed. Please try again."
+      : null;
+
+  return <AuthView onSuccess={handleSuccess} errorMessage={errorMessage} />;
 }
